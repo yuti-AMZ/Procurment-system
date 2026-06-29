@@ -1,0 +1,280 @@
+{
+  "rabbit_version": "3.13",
+  "rabbitmq_version": "3.13.0",
+  "users": [
+    {
+      "name": "guest",
+      "password_hash": "",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "guest",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "procurement.exchange",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "rfq.exchange",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "supplier.exchange",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "quotation.exchange",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "invoice.exchange",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "notification.exchange",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "pr.created.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "pr.approved.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "po.generated.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "rfq.created.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "rfq.published.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "quotation.submitted.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "supplier.registered.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "supplier.approved.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "supplier.rejected.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "supplier.updated.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "rfq.closed.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "invoice.uploaded.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "notification.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "procurement.exchange",
+      "vhost": "/",
+      "destination": "pr.created.queue",
+      "destination_type": "queue",
+      "routing_key": "procurement.pr.created",
+      "arguments": {}
+    },
+    {
+      "source": "procurement.exchange",
+      "vhost": "/",
+      "destination": "pr.approved.queue",
+      "destination_type": "queue",
+      "routing_key": "procurement.pr.approved",
+      "arguments": {}
+    },
+    {
+      "source": "procurement.exchange",
+      "vhost": "/",
+      "destination": "po.generated.queue",
+      "destination_type": "queue",
+      "routing_key": "procurement.po.generated",
+      "arguments": {}
+    },
+    {
+      "source": "rfq.exchange",
+      "vhost": "/",
+      "destination": "rfq.created.queue",
+      "destination_type": "queue",
+      "routing_key": "rfq.created",
+      "arguments": {}
+    },
+    {
+      "source": "rfq.exchange",
+      "vhost": "/",
+      "destination": "rfq.published.queue",
+      "destination_type": "queue",
+      "routing_key": "rfq.published",
+      "arguments": {}
+    },
+    {
+      "source": "quotation.exchange",
+      "vhost": "/",
+      "destination": "quotation.submitted.queue",
+      "destination_type": "queue",
+      "routing_key": "quotation.submitted",
+      "arguments": {}
+    },
+    {
+      "source": "supplier.exchange",
+      "vhost": "/",
+      "destination": "supplier.registered.queue",
+      "destination_type": "queue",
+      "routing_key": "supplier.registered",
+      "arguments": {}
+    },
+    {
+      "source": "supplier.exchange",
+      "vhost": "/",
+      "destination": "supplier.approved.queue",
+      "destination_type": "queue",
+      "routing_key": "supplier.approved",
+      "arguments": {}
+    },
+    {
+      "source": "supplier.exchange",
+      "vhost": "/",
+      "destination": "supplier.rejected.queue",
+      "destination_type": "queue",
+      "routing_key": "supplier.rejected",
+      "arguments": {}
+    },
+    {
+      "source": "supplier.exchange",
+      "vhost": "/",
+      "destination": "supplier.updated.queue",
+      "destination_type": "queue",
+      "routing_key": "supplier.updated",
+      "arguments": {}
+    },
+    {
+      "source": "rfq.exchange",
+      "vhost": "/",
+      "destination": "rfq.closed.queue",
+      "destination_type": "queue",
+      "routing_key": "rfq.closed",
+      "arguments": {}
+    },
+    {
+      "source": "invoice.exchange",
+      "vhost": "/",
+      "destination": "invoice.uploaded.queue",
+      "destination_type": "queue",
+      "routing_key": "invoice.uploaded",
+      "arguments": {}
+    },
+    {
+      "source": "notification.exchange",
+      "vhost": "/",
+      "destination": "notification.queue",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+# Logs
+*.log
+
+# Dependencies
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.js
+
+# Build outputs
+**/target/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Environment / local overrides
+**/application-local.yml
+**/application-local.properties
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+infrastructure/data/
+
+# Misc
+*.jar
+*.war
+*.ear
+*.class
+*.pyc
+*~

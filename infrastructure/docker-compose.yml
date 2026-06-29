@@ -1,0 +1,76 @@
+services:
+  # --- RELATIONAL DATABASE CONTROL ---
+  postgres:
+    image: postgres:15-alpine
+    container_name: procureai-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-supersecretpassword}
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - procureai-network
+
+  # --- ASYNCHRONOUS MESSAGE BROKER ---
+  ocr-service:
+    build:
+      context: ../services/ocr-service
+    container_name: procureai-ocr
+    ports:
+      - "8091:8091"
+    environment:
+      OCR_DB_HOST: postgres
+      OCR_DB_PORT: 5432
+      OCR_DB_NAME: ocr_db
+      OCR_DB_USER: admin
+      OCR_DB_PASSWORD: ${DB_PASSWORD:-supersecretpassword}
+    depends_on:
+      - postgres
+    networks:
+      - procureai-network
+
+  ai-service:
+    build:
+      context: ../services/ai-service
+    container_name: procureai-ai
+    ports:
+      - "8000:8000"
+    environment:
+      AI_DB_HOST: postgres
+      AI_DB_PORT: 5432
+      AI_DB_NAME: ai_db
+      AI_DB_USER: admin
+      AI_DB_PASSWORD: ${DB_PASSWORD:-supersecretpassword}
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - procureai-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: procureai-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
+    networks:
+      - procureai-network
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
+networks:
+  procureai-network:
+    driver: bridge

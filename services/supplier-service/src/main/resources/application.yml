@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: supplier-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/supplier_db
+    username: admin
+    password: ${DB_PASSWORD:supersecretpassword}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+
+server:
+  port: 8085
