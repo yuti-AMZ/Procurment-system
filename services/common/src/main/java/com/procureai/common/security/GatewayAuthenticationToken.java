@@ -4,7 +4,6 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Collections;
-import java.util.List;
 
 public class GatewayAuthenticationToken extends AbstractAuthenticationToken {
 
@@ -13,15 +12,17 @@ public class GatewayAuthenticationToken extends AbstractAuthenticationToken {
     private final String role;
     private final String firstName;
     private final String lastName;
+    private final Long companyId;
 
     public GatewayAuthenticationToken(Long userId, String email, String role,
-                                      String firstName, String lastName) {
+                                      String firstName, String lastName, Long companyId) {
         super(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)));
         this.userId = userId;
         this.email = email;
         this.role = role;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.companyId = companyId;
         setAuthenticated(true);
     }
 
@@ -40,4 +41,5 @@ public class GatewayAuthenticationToken extends AbstractAuthenticationToken {
     public String getRole() { return role; }
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
+    public Long getCompanyId() { return companyId; }
 }

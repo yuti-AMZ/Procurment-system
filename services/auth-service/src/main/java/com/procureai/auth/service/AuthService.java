@@ -2,8 +2,11 @@ package com.procureai.auth.service;
 
 import com.procureai.auth.dto.*;
 import com.procureai.auth.entity.AccountStatus;
+import com.procureai.auth.entity.Company;
+import com.procureai.auth.entity.CompanyStatus;
 import com.procureai.auth.entity.Role;
 import com.procureai.auth.entity.User;
+import com.procureai.auth.repository.CompanyRepository;
 import com.procureai.auth.repository.UserRepository;
 import com.procureai.auth.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,46 +26,26 @@ public class AuthService {
     private static final int LOCKOUT_DURATION_MINUTES = 15;
 
     private final UserRepository userRepository;
+    private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final boolean emailVerificationEnabled;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+    public AuthService(UserRepository userRepository,
+                       CompanyRepository companyRepository,
+                       PasswordEncoder passwordEncoder,
                        JwtTokenProvider jwtTokenProvider,
                        @Value("${app.email-verification-enabled:false}") boolean emailVerificationEnabled) {
         this.userRepository = userRepository;
+        this.companyRepository = companyRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.emailVerificationEnabled = emailVerificationEnabled;
     }
 
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail().trim().toLowerCase())) {
-            throw new BadCredentialsException("An account with this email already exists");
-        }
-
-        String email = request.getEmail().trim().toLowerCase();
-
-        User user = new User(
-                email,
-                passwordEncoder.encode(request.getPassword()),
-                sanitize(request.getFirstName()),
-                sanitize(request.getLastName()),
-                request.getRole() != null ? request.getRole() : Role.EMPLOYEE
-        );
-        user.setAccountStatus(AccountStatus.PENDING_APPROVAL);
-        user.setEmailVerified(false);
-
-        if (emailVerificationEnabled) {
-            user.setEmailVerificationToken(UUID.randomUUID().toString());
-        }
-
-        user = userRepository.save(user);
-
-        return new AuthResponse(null, null, user.getId(), user.getEmail(),
-                user.getFirstName(), user.getLastName(), user.getRole(),
-                user.getAccountStatus(), user.isEmailVerified(),
-                "Registration successful. Your account is pending admin approval.");
+        throw new BadCredentialsException(
+                "Individual registration is disabled. Please register your organization instead.");
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -93,27 +76,35 @@ public class AuthService {
         }
 
         if (user.getAccountStatus() == AccountStatus.PENDING_APPROVAL) {
-            return new AuthResponse(null, null, user.getId(), user.getEmail(),
-                    user.getFirstName(), user.getLastName(), user.getRole(),
-                    AccountStatus.PENDING_APPROVAL, user.isEmailVerified(),
+            return buildStatusResponse(user,
                     "Your account is pending admin approval. Please wait for an administrator to approve your account.");
         }
 
         if (user.getAccountStatus() == AccountStatus.REJECTED) {
-            return new AuthResponse(null, null, user.getId(), user.getEmail(),
-                    user.getFirstName(), user.getLastName(), user.getRole(),
-                    AccountStatus.REJECTED, user.isEmailVerified(),
+            return buildStatusResponse(user,
                     "Your account registration was rejected. Contact an administrator for more information.");
         }
 
-        String accessToken = jwtTokenProvider.generateAccessToken(
-                user.getId(), user.getEmail(), user.getRole().name(),
-                user.getFirstName(), user.getLastName());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail());
+        if (user.getCompanyId() != null) {
+            Company company = companyRepository.findById(user.getCompanyId()).orElse(null);
+            if (company == null) {
+                throw new BadCredentialsException("Organization not found");
+            }
+            if (company.getStatus() == CompanyStatus.PENDING_APPROVAL) {
+                return buildStatusResponse(user,
+                        "Your organization is pending platform approval. You will be notified once approved.");
+            }
+            if (company.getStatus() == CompanyStatus.REJECTED) {
+                return buildStatusResponse(user,
+                        "Your organization registration was rejected: "
+                                + (company.getRejectionReason() != null ? company.getRejectionReason() : "Contact support."));
+            }
+            if (company.getStatus() == CompanyStatus.SUSPENDED) {
+                throw new BadCredentialsException("Your organization has been suspended. Contact support.");
+            }
+        }
 
-        return new AuthResponse(accessToken, refreshToken, user.getId(), user.getEmail(),
-                user.getFirstName(), user.getLastName(), user.getRole(),
-                user.getAccountStatus(), user.isEmailVerified(), "Login successful.");
+        return issueTokens(user);
     }
 
     public AuthResponse oauthLogin(OAuthLoginRequest request) {
@@ -152,27 +143,15 @@ public class AuthService {
         }
 
         if (user.getAccountStatus() == AccountStatus.PENDING_APPROVAL) {
-            return new AuthResponse(null, null, user.getId(), user.getEmail(),
-                    user.getFirstName(), user.getLastName(), user.getRole(),
-                    AccountStatus.PENDING_APPROVAL, user.isEmailVerified(),
+            return buildStatusResponse(user,
                     "Your account is pending admin approval. Please wait for an administrator to approve your account.");
         }
 
         if (user.getAccountStatus() == AccountStatus.REJECTED) {
-            return new AuthResponse(null, null, user.getId(), user.getEmail(),
-                    user.getFirstName(), user.getLastName(), user.getRole(),
-                    AccountStatus.REJECTED, user.isEmailVerified(),
-                    "Your account registration was rejected. Contact an administrator for more information.");
+            return buildStatusResponse(user, "Your account registration was rejected.");
         }
 
-        String accessToken = jwtTokenProvider.generateAccessToken(
-                user.getId(), user.getEmail(), user.getRole().name(),
-                user.getFirstName(), user.getLastName());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail());
-
-        return new AuthResponse(accessToken, refreshToken, user.getId(), user.getEmail(),
-                user.getFirstName(), user.getLastName(), user.getRole(),
-                user.getAccountStatus(), user.isEmailVerified(), "Login successful.");
+        return issueTokens(user);
     }
 
     public AuthResponse refreshToken(RefreshTokenRequest request) {
@@ -188,14 +167,7 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BadCredentialsException("User not found"));
 
-        String accessToken = jwtTokenProvider.generateAccessToken(
-                user.getId(), user.getEmail(), user.getRole().name(),
-                user.getFirstName(), user.getLastName());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail());
-
-        return new AuthResponse(accessToken, refreshToken, user.getId(), user.getEmail(),
-                user.getFirstName(), user.getLastName(), user.getRole(),
-                user.getAccountStatus(), user.isEmailVerified(), "Token refreshed successfully.");
+        return issueTokens(user);
     }
 
     public void verifyEmail(String token) {
@@ -244,6 +216,11 @@ public class AuthService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new BadCredentialsException("User not found"));
 
+        if (user.getCompanyId() != null) {
+            throw new BadCredentialsException(
+                    "Company users are approved by their organization admin, not platform admin.");
+        }
+
         if (request.isApproved()) {
             user.setAccountStatus(AccountStatus.APPROVED);
             user.setEnabled(true);
@@ -258,6 +235,7 @@ public class AuthService {
     public List<UserResponse> getPendingUsers() {
         return userRepository.findByAccountStatus(AccountStatus.PENDING_APPROVAL)
                 .stream()
+                .filter(u -> u.getCompanyId() == null)
                 .map(this::toUserResponse)
                 .collect(Collectors.toList());
     }
@@ -301,10 +279,55 @@ public class AuthService {
     }
 
     private UserResponse toUserResponse(User user) {
+        String companyName = null;
+        if (user.getCompanyId() != null) {
+            companyName = companyRepository.findById(user.getCompanyId())
+                    .map(Company::getName).orElse(null);
+        }
         return new UserResponse(
                 user.getId(), user.getEmail(), user.getFirstName(), user.getLastName(),
                 user.getRole(), user.getAccountStatus(), user.isEmailVerified(),
-                user.isEnabled(), user.getCreatedAt());
+                user.isEnabled(), user.getCompanyId(), companyName, user.getCreatedAt());
+    }
+
+    private AuthResponse issueTokens(User user) {
+        String companyName = null;
+        CompanyStatus companyStatus = null;
+        if (user.getCompanyId() != null) {
+            Company company = companyRepository.findById(user.getCompanyId()).orElse(null);
+            if (company != null) {
+                companyName = company.getName();
+                companyStatus = company.getStatus();
+            }
+        }
+
+        String accessToken = jwtTokenProvider.generateAccessToken(
+                user.getId(), user.getEmail(), user.getRole().name(),
+                user.getFirstName(), user.getLastName(),
+                user.getCompanyId(), companyName);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail());
+
+        AuthResponse resp = new AuthResponse(accessToken, refreshToken, user.getId(), user.getEmail(),
+                user.getFirstName(), user.getLastName(), user.getRole(),
+                user.getAccountStatus(), user.isEmailVerified(), "Login successful.");
+        resp.setCompanyId(user.getCompanyId());
+        resp.setCompanyName(companyName);
+        resp.setCompanyStatus(companyStatus);
+        return resp;
+    }
+
+    private AuthResponse buildStatusResponse(User user, String message) {
+        AuthResponse resp = new AuthResponse(null, null, user.getId(), user.getEmail(),
+                user.getFirstName(), user.getLastName(), user.getRole(),
+                user.getAccountStatus(), user.isEmailVerified(), message);
+        resp.setCompanyId(user.getCompanyId());
+        if (user.getCompanyId() != null) {
+            companyRepository.findById(user.getCompanyId()).ifPresent(c -> {
+                resp.setCompanyName(c.getName());
+                resp.setCompanyStatus(c.getStatus());
+            });
+        }
+        return resp;
     }
 
     private String sanitize(String input) {

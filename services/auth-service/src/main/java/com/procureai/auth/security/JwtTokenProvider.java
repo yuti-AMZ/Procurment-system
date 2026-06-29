@@ -26,18 +26,29 @@ public class JwtTokenProvider {
         this.refreshTokenExpiration = refreshExpiration;
     }
 
-    public String generateAccessToken(Long userId, String email, String role, String firstName, String lastName) {
+    public String generateAccessToken(Long userId, String email, String role,
+                                      String firstName, String lastName,
+                                      Long companyId, String companyName) {
         Date now = new Date();
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(email)
                 .claim("userId", userId)
                 .claim("role", role)
                 .claim("firstName", firstName)
                 .claim("lastName", lastName)
                 .issuedAt(now)
-                .expiration(new Date(now.getTime() + accessTokenExpiration))
-                .signWith(key)
-                .compact();
+                .expiration(new Date(now.getTime() + accessTokenExpiration));
+        if (companyId != null) {
+            builder.claim("companyId", companyId);
+        }
+        if (companyName != null) {
+            builder.claim("companyName", companyName);
+        }
+        return builder.signWith(key).compact();
+    }
+
+    public String generateAccessToken(Long userId, String email, String role, String firstName, String lastName) {
+        return generateAccessToken(userId, email, role, firstName, lastName, null, null);
     }
 
     public String generateRefreshToken(Long userId, String email) {

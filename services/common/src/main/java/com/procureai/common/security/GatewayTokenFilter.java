@@ -20,11 +20,13 @@ public class GatewayTokenFilter extends OncePerRequestFilter {
         String role = request.getHeader("X-User-Role");
         String firstName = request.getHeader("X-User-First-Name");
         String lastName = request.getHeader("X-User-Last-Name");
+        String companyIdHeader = request.getHeader("X-Company-Id");
 
         if (StringUtils.hasText(userId) && StringUtils.hasText(email) && StringUtils.hasText(role)) {
             try {
+                Long companyId = StringUtils.hasText(companyIdHeader) ? Long.parseLong(companyIdHeader) : null;
                 GatewayAuthenticationToken auth = new GatewayAuthenticationToken(
-                        Long.parseLong(userId), email, role, firstName, lastName);
+                        Long.parseLong(userId), email, role, firstName, lastName, companyId);
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (NumberFormatException ignored) {}
         }

@@ -27,6 +27,9 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Column(name = "company_id")
+    private Long companyId;
+
     @Enumerated(EnumType.STRING)
     private AccountStatus accountStatus = AccountStatus.PENDING_APPROVAL;
 
@@ -89,6 +92,8 @@ public class User {
     public void setLastName(String lastName) { this.lastName = lastName; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public AccountStatus getAccountStatus() { return accountStatus; }
     public void setAccountStatus(AccountStatus accountStatus) { this.accountStatus = accountStatus; }
     public String getEmailVerificationToken() { return emailVerificationToken; }

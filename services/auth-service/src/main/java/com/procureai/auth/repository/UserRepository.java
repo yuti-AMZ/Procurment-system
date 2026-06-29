@@ -13,5 +13,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmailVerificationToken(String token);
     Optional<User> findByOauthProviderAndOauthId(String provider, String oauthId);
     List<User> findByAccountStatus(AccountStatus accountStatus);
+    List<User> findByCompanyIdAndAccountStatus(Long companyId, AccountStatus accountStatus);
+    List<User> findByCompanyIdOrderByCreatedAtDesc(Long companyId);
     long countByAccountStatus(AccountStatus accountStatus);
 }

@@ -22,7 +22,7 @@ import java.util.List;
 public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Config> {
 
     private static final List<String> PUBLIC_PATTERNS = Arrays.asList(
-            "/api/auth/login", "/api/auth/register", "/api/auth/oauth",
+            "/api/auth/login", "/api/auth/register", "/api/auth/register-company", "/api/auth/oauth",
             "/api/auth/refresh", "/api/auth/verify-email",
             "/api/auth/forgot-password", "/api/auth/reset-password");
 
@@ -73,6 +73,8 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
                 String role = claims.get("role", String.class);
                 String firstName = claims.get("firstName", String.class);
                 String lastName = claims.get("lastName", String.class);
+                Long companyId = claims.get("companyId", Long.class);
+                String companyName = claims.get("companyName", String.class);
 
                 exchange = exchange.mutate()
                         .request(r -> r
@@ -81,6 +83,8 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
                                 .header("X-User-Role", role != null ? role : "")
                                 .header("X-User-First-Name", firstName != null ? firstName : "")
                                 .header("X-User-Last-Name", lastName != null ? lastName : "")
+                                .header("X-Company-Id", companyId != null ? String.valueOf(companyId) : "")
+                                .header("X-Company-Name", companyName != null ? companyName : "")
                         )
                         .build();
 
@@ -99,7 +103,7 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
                 return true;
             }
         }
-        if (path.matches(".*/api/auth/(login|register|oauth|refresh|verify-email|forgot-password|reset-password)")) {
+        if (path.matches(".*/api/auth/(login|register|register-company|oauth|refresh|verify-email|forgot-password|reset-password)")) {
             return true;
         }
         return false;

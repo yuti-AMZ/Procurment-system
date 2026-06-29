@@ -1,6 +1,7 @@
 package com.procureai.auth.dto;
 
 import com.procureai.auth.entity.AccountStatus;
+import com.procureai.auth.entity.CompanyStatus;
 import com.procureai.auth.entity.Role;
 
 public class AuthResponse {
@@ -15,6 +16,9 @@ public class AuthResponse {
     private AccountStatus accountStatus;
     private boolean emailVerified;
     private String message;
+    private Long companyId;
+    private String companyName;
+    private CompanyStatus companyStatus;
 
     public AuthResponse() {}
 
@@ -43,6 +47,12 @@ public class AuthResponse {
     public AccountStatus getAccountStatus() { return accountStatus; }
     public boolean isEmailVerified() { return emailVerified; }
     public String getMessage() { return message; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
+    public CompanyStatus getCompanyStatus() { return companyStatus; }
+    public void setCompanyStatus(CompanyStatus companyStatus) { this.companyStatus = companyStatus; }
     public void setToken(String token) { this.token = token; }
     public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
     public void setUserId(Long userId) { this.userId = userId; }
