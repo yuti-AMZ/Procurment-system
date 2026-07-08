@@ -60,17 +60,17 @@ export default function PurchaseRequestsPage() {
     }
   };
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground ">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
             Purchase Requests
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {prs.length} total requests
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/dashboard/procurement/purchase-requests/new">
             New Purchase Request
           </Link>
@@ -80,17 +80,17 @@ export default function PurchaseRequestsPage() {
         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
           {error}
         </div>
-      )}{" "}
+      )}
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <CardTitle className="">All Requests</CardTitle>
-            <div className="flex gap-2 items-center">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <CardTitle>All Requests</CardTitle>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Input
                 placeholder="Search requests..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-60"
+                className="w-full sm:w-60"
               />
               <select
                 value={statusFilter}
@@ -117,14 +117,14 @@ export default function PurchaseRequestsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-card-border text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    <th className="px-6 py-4">ID</th>
-                    <th className="px-6 py-4">Title</th>
-                    <th className="px-6 py-4">Requester</th>
-                    <th className="px-6 py-4">Department</th>
-                    <th className="px-6 py-4">Amount</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Date</th>
-                    <th className="px-6 py-4" />
+                    <th className="px-3 sm:px-6 py-3 sm:py-4">ID</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4">Title</th>
+                    <th className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4">Requester</th>
+                    <th className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4">Department</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4">Amount</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4">Status</th>
+                    <th className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4">Date</th>
+                    <th className="px-3 sm:px-6 py-3 sm:py-4" />
                   </tr>
                 </thead>
                 <tbody>
@@ -133,34 +133,34 @@ export default function PurchaseRequestsPage() {
                       key={pr.id}
                       className="border-b border-card-border hover:bg-muted/30 transition-colors cursor-pointer"
                     >
-                      <td className="px-6 py-4 text-sm font-medium text-gold font-mono">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm font-medium text-gold font-mono">
                         {pr.prNumber}
                       </td>
-                      <td className="px-6 py-4 text-sm text-foreground">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-foreground max-w-[150px] truncate sm:max-w-none">
                         {pr.title}
                       </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                      <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 text-sm text-muted-foreground">
                         {pr.requestedBy}
                       </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                      <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4 text-sm text-muted-foreground">
                         {pr.department || "—"}
                       </td>
-                      <td className="px-6 py-4 text-sm text-foreground font-medium">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-foreground font-medium">
                         {formatCurrency(pr.totalAmount)}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[pr.status] || ""}`}
+                          className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[pr.status] || ""}`}
                         >
                           {pr.status === "PENDING_APPROVAL"
                             ? "PENDING"
-                            : pr.status}{" "}
+                            : pr.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                      <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 text-sm text-muted-foreground">
                         {pr.createdAt?.split("T")[0]}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4">
                         {pr.status === "APPROVED" && (
                           <Button
                             variant="outline"
@@ -170,26 +170,26 @@ export default function PurchaseRequestsPage() {
                           >
                             {poLoading === pr.id
                               ? "Generating..."
-                              : "Convert to PO"}{" "}
+                              : "Convert to PO"}
                           </Button>
                         )}
                         {pr.status === "PO_GENERATED" && (
                           <span className="text-xs text-muted-foreground">
                             PO Created
                           </span>
-                        )}{" "}
+                        )}
                       </td>
                     </tr>
-                  ))}{" "}
+                  ))}
                 </tbody>
               </table>
               {filtered.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
                   No purchase requests found.
                 </div>
-              )}{" "}
+              )}
             </div>
-          )}{" "}
+          )}
         </CardContent>
       </Card>
     </div>

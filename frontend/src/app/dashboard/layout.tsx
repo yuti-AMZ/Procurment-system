@@ -10,10 +10,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <DashboardSidebar />
       <div
-        className={`transition-all duration-300 ${collapsed ? "pl-16" : "pl-64"}`}
+        className={`transition-all duration-300 ${collapsed ? "lg:pl-16" : "lg:pl-64"}`}
       >
         <DashboardHeader />
-        <main className="p-6">{children} </main>
+        <main className="p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

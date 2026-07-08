@@ -115,7 +115,7 @@ export default function SignupPage() {
                 <Label htmlFor="companyName">Organization Name</Label>
                 <Input id="companyName" placeholder="e.g. Acme Corporation" value={form.companyName} onChange={(e) => update("companyName", e.target.value)} required />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="registrationNumber">Registration Number</Label>
                   <Input id="registrationNumber" placeholder="e.g. REG-12345" value={form.registrationNumber} onChange={(e) => update("registrationNumber", e.target.value)} required />
@@ -135,7 +135,7 @@ export default function SignupPage() {
             </form>
           ) : (
             <form className="space-y-5" onSubmit={handleSubmit}>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="adminFirstName">First Name</Label>
                   <Input id="adminFirstName" placeholder="First name" value={form.adminFirstName} onChange={(e) => update("adminFirstName", e.target.value)} required />

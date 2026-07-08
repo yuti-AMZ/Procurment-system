@@ -67,9 +67,9 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Platform Admin</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Platform Admin</h1>
         <p className="text-sm text-muted-foreground mt-1">Manage your SaaS platform — tenants, subscriptions, security & operations</p>
       </div>
 
@@ -122,24 +122,24 @@ export default function AdminDashboardPage() {
               <thead>
                 <tr className="border-b border-card-border">
                   <th className="text-left py-3 px-2 text-muted-foreground font-medium">Organization</th>
-                  <th className="text-left py-3 px-2 text-muted-foreground font-medium">Email</th>
+                  <th className="hidden sm:table-cell text-left py-3 px-2 text-muted-foreground font-medium">Email</th>
                   <th className="text-left py-3 px-2 text-muted-foreground font-medium">Status</th>
-                  <th className="text-left py-3 px-2 text-muted-foreground font-medium">Admin</th>
-                  <th className="text-left py-3 px-2 text-muted-foreground font-medium">Industry</th>
+                  <th className="hidden md:table-cell text-left py-3 px-2 text-muted-foreground font-medium">Admin</th>
+                  <th className="hidden lg:table-cell text-left py-3 px-2 text-muted-foreground font-medium">Industry</th>
                 </tr>
               </thead>
               <tbody>
                 {recentCompanies.map((c: any) => (
                   <tr key={c.id} className="border-b border-card-border/50 last:border-0">
-                    <td className="py-3 px-2 text-foreground font-medium">{c.name}</td>
-                    <td className="py-3 px-2 text-muted-foreground">{c.email}</td>
+                    <td className="py-3 px-2 text-foreground font-medium max-w-[120px] truncate sm:max-w-none">{c.name}</td>
+                    <td className="hidden sm:table-cell py-3 px-2 text-muted-foreground">{c.email}</td>
                     <td className="py-3 px-2">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${c.status === "APPROVED" ? "bg-green-500/10 text-green-500 border border-green-500/30" : c.status === "PENDING_APPROVAL" ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/30" : c.status === "SUSPENDED" ? "bg-red-500/10 text-red-500 border border-red-500/30" : "bg-destructive/10 text-destructive border border-destructive/30"}`}>
                         {c.status === "PENDING_APPROVAL" ? "Pending" : c.status === "APPROVED" ? "Active" : c.status}
                       </span>
                     </td>
-                    <td className="py-3 px-2 text-muted-foreground">{c.adminName || "-"}</td>
-                    <td className="py-3 px-2 text-muted-foreground">{c.industry || "-"}</td>
+                    <td className="hidden md:table-cell py-3 px-2 text-muted-foreground">{c.adminName || "-"}</td>
+                    <td className="hidden lg:table-cell py-3 px-2 text-muted-foreground">{c.industry || "-"}</td>
                   </tr>
                 ))}
                 {recentCompanies.length === 0 && (<tr><td colSpan={5} className="py-8 text-center text-muted-foreground">No organizations registered yet</td></tr>)}

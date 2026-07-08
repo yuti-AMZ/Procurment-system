@@ -92,10 +92,10 @@ export default function LoginPage() {
       </div>
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold text-gold">
+          <Link href="/" className="text-2xl sm:text-3xl font-bold text-gold">
             ProcurAI
           </Link>
-          <h1 className="text-2xl font-semibold mt-6 mb-2">
+          <h1 className="text-xl sm:text-2xl font-semibold mt-6 mb-2">
             {t("login.title")}
           </h1>
           <p className="text-muted-foreground text-sm">{t("login.subtitle")}</p>

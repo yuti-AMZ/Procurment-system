@@ -36,9 +36,9 @@ export default function MyPurchaseRequestsPage() {
       pr.status?.toLowerCase().includes(search.toLowerCase()),
   );
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">
           My Purchase Requests
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -71,7 +71,7 @@ export default function MyPurchaseRequestsPage() {
                     <th className="text-left py-3 px-2 font-medium">PR Number</th>
                     <th className="text-left py-3 px-2 font-medium">Title</th>
                     <th className="text-left py-3 px-2 font-medium">Status</th>
-                    <th className="text-left py-3 px-2 font-medium">Date</th>
+                    <th className="hidden sm:table-cell text-left py-3 px-2 font-medium">Date</th>
                     <th className="text-right py-3 px-2 font-medium">Amount</th>
                   </tr>
                 </thead>
@@ -87,15 +87,15 @@ export default function MyPurchaseRequestsPage() {
                       <td className="py-3 px-2 text-gold font-mono text-xs">
                         {pr.prNumber}
                       </td>
-                      <td className="py-3 px-2 text-foreground">{pr.title}</td>
+                      <td className="py-3 px-2 text-foreground max-w-[120px] truncate sm:max-w-none">{pr.title}</td>
                       <td className="py-3 px-2">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[pr.status] || "bg-muted text-muted-foreground"}`}
+                          className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[pr.status] || "bg-muted text-muted-foreground"}`}
                         >
                           {pr.status}
                         </span>
                       </td>
-                      <td className="py-3 px-2 text-muted-foreground">
+                      <td className="hidden sm:table-cell py-3 px-2 text-muted-foreground">
                         {pr.createdAt?.split("T")[0]}
                       </td>
                       <td className="py-3 px-2 text-right text-foreground font-mono">
