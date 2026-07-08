@@ -37,6 +37,7 @@ public class SupplierEventProducer {
 
     private void sendNotification(SupplierEvent event, String title) {
         NotificationEvent notification = new NotificationEvent("NOTIFICATION", "supplier-service");
+        notification.setCompanyId(event.getCompanyId());
         notification.setTitle(title);
         notification.setMessage("Supplier " + event.getCompanyName() + " status: " + event.getStatus());
         notification.setNotificationType("SUPPLIER_STATUS");

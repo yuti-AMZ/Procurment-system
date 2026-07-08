@@ -5,10 +5,13 @@ const publicPaths = ["/login", "/signup", "/forgot-password", "/reset-password",
 
 const rolePathPrefixes: Record<string, string[]> = {
   ADMIN: ["/dashboard/admin"],
+  COMPANY_ADMIN: ["/dashboard/company-admin"],
   PROCUREMENT: ["/dashboard/procurement"],
   MANAGER: ["/dashboard/manager"],
   EMPLOYEE: ["/dashboard/employee"],
   SUPPLIER: ["/dashboard/supplier"],
+  FINANCE_OFFICER: ["/dashboard/finance"],
+  AUDITOR: ["/dashboard/audit"],
 };
 
 export function middleware(request: NextRequest) {

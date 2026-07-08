@@ -12,6 +12,9 @@ public class ApprovalStep {
     private Long id;
 
     @Column(nullable = false)
+    private Long companyId;
+
+    @Column(nullable = false)
     private String roleName;
 
     private Integer stepOrder;
@@ -25,6 +28,8 @@ public class ApprovalStep {
     public void setId(Long id) { this.id = id; }
     public String getRoleName() { return roleName; }
     public void setRoleName(String roleName) { this.roleName = roleName; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public Integer getStepOrder() { return stepOrder; }
     public void setStepOrder(Integer stepOrder) { this.stepOrder = stepOrder; }
     public BigDecimal getMinAmount() { return minAmount; }

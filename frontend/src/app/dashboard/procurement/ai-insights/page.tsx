@@ -56,7 +56,6 @@ export default function AiInsightsPage() {
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [error, setError] = useState("");
-  const [serviceDown, setServiceDown] = useState(false);
 
   useEffect(() => {
     listRFQs()
@@ -66,7 +65,7 @@ export default function AiInsightsPage() {
 
     getAiDashboard()
       .then(setDashboard)
-      .catch(() => setServiceDown(true))
+      .catch(() => {})
       .finally(() => setLoadingDashboard(false));
   }, []);
 
@@ -82,12 +81,8 @@ export default function AiInsightsPage() {
       ]);
       setRanking(rankData);
       setRecommendation(recData);
-      setServiceDown(false);
     } catch {
-      setError(
-        "Could not reach the AI service. Start it with: docker-compose up -d ai-service (or uvicorn on port 8000).",
-      );
-      setServiceDown(true);
+      setError("AI analysis failed. Please try again.");
     } finally {
       setLoadingAnalysis(false);
     }
@@ -127,13 +122,6 @@ export default function AiInsightsPage() {
           {loadingAnalysis ? "Analyzing…" : "Refresh analysis"}
         </Button>
       </div>
-
-      {serviceDown && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          AI service offline — run <code className="text-gold">docker-compose up -d ai-service</code> in the{" "}
-          <code className="text-gold">infrastructure</code> folder, then refresh.
-        </div>
-      )}
 
       {error && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

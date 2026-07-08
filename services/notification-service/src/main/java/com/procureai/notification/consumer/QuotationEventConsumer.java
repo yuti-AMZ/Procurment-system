@@ -30,6 +30,7 @@ public class QuotationEventConsumer {
                 + " for $" + event.getTotalAmount();
 
         notificationService.createNotification(
+                event.getCompanyId(),
                 null, null, title, message,
                 "QUOTATION_SUBMITTED", "/quotation/" + event.getQuotationId(),
                 "quotation-service"

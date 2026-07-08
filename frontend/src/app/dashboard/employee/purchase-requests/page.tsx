@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useI18n } from "@/lib/i18n-provider";
 import { listPRs } from "@/lib/api";
 interface PR {
   id: number;
@@ -21,38 +20,35 @@ const statusStyles: Record<string, string> = {
   REJECTED: "bg-destructive/10 text-destructive border-destructive/20",
 };
 export default function MyPurchaseRequestsPage() {
-  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [prs, setPrs] = useState<PR[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     listPRs()
-      .then(setPrs)
+      .then((data) => setPrs(Array.isArray(data) ? data : []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
   const filtered = prs.filter(
     (pr) =>
-      pr.prNumber.toLowerCase().includes(search.toLowerCase()) ||
-      pr.title.toLowerCase().includes(search.toLowerCase()) ||
-      pr.status.toLowerCase().includes(search.toLowerCase()),
+      pr.prNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      pr.title?.toLowerCase().includes(search.toLowerCase()) ||
+      pr.status?.toLowerCase().includes(search.toLowerCase()),
   );
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">
-          {t("portal.employee.myPRs.title")}
+          My Purchase Requests
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {t("portal.employee.myPRs.subtitle")}
+          Track the status of your purchase requests
         </p>
       </div>
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <CardTitle className="">
-              {t("portal.employee.myPRs.listTitle")}
-            </CardTitle>
+            <CardTitle>Purchase Requests</CardTitle>
             <div className="w-full sm:w-72">
               <Input
                 placeholder="Search by ID, title or status..."
@@ -72,21 +68,11 @@ export default function MyPurchaseRequestsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-card-border text-muted-foreground">
-                    <th className="text-left py-3 px-2 font-medium">
-                      {t("portal.employee.myPRs.id")}
-                    </th>
-                    <th className="text-left py-3 px-2 font-medium">
-                      {t("portal.employee.myPRs.title")}
-                    </th>
-                    <th className="text-left py-3 px-2 font-medium">
-                      {t("portal.employee.myPRs.status")}
-                    </th>
-                    <th className="text-left py-3 px-2 font-medium">
-                      {t("portal.employee.myPRs.date")}
-                    </th>
-                    <th className="text-right py-3 px-2 font-medium">
-                      {t("portal.employee.myPRs.amount")}
-                    </th>
+                    <th className="text-left py-3 px-2 font-medium">PR Number</th>
+                    <th className="text-left py-3 px-2 font-medium">Title</th>
+                    <th className="text-left py-3 px-2 font-medium">Status</th>
+                    <th className="text-left py-3 px-2 font-medium">Date</th>
+                    <th className="text-right py-3 px-2 font-medium">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -106,14 +92,14 @@ export default function MyPurchaseRequestsPage() {
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[pr.status] || "bg-muted text-muted-foreground"}`}
                         >
-                          {pr.status}{" "}
+                          {pr.status}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-muted-foreground">
                         {pr.createdAt?.split("T")[0]}
                       </td>
                       <td className="py-3 px-2 text-right text-foreground font-mono">
-                        ${Number(pr.totalAmount).toFixed(2)}
+                        ${Number(pr.totalAmount || 0).toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -123,14 +109,14 @@ export default function MyPurchaseRequestsPage() {
                         colSpan={5}
                         className="py-8 text-center text-muted-foreground"
                       >
-                        {t("portal.employee.myPRs.noResults")}{" "}
+                        No purchase requests found
                       </td>
                     </tr>
-                  )}{" "}
+                  )}
                 </tbody>
               </table>
             </div>
-          )}{" "}
+          )}
         </CardContent>
       </Card>
     </div>

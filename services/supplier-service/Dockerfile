@@ -1,13 +1,5 @@
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY pom.xml ../pom.xml
-COPY services/common/ ../services/common/
-COPY services/supplier-service/ .
-RUN apk add --no-cache maven && mvn clean package -DskipTests -o || \
-    mvn clean package -DskipTests
-
-FROM eclipse-temurin:21-jre-alpine
-WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY target/supplier-service-*.jar app.jar
 EXPOSE 8085
 ENTRYPOINT ["java", "-jar", "app.jar"]

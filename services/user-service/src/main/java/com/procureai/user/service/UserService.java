@@ -1,5 +1,7 @@
 package com.procureai.user.service;
 
+import com.procureai.common.gate.FeatureGate;
+import com.procureai.common.security.TenantContext;
 import com.procureai.user.dto.CreateUserRequest;
 import com.procureai.user.dto.UserResponse;
 import com.procureai.user.entity.Department;
@@ -16,19 +18,26 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
+    private final FeatureGate featureGate;
 
-    public UserService(UserRepository userRepository, DepartmentRepository departmentRepository) {
+    public UserService(UserRepository userRepository, DepartmentRepository departmentRepository,
+                       FeatureGate featureGate) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
+        this.featureGate = featureGate;
     }
 
     public UserResponse createUser(CreateUserRequest request) {
+        featureGate.require("USER_MANAGEMENT");
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
 
+        Long companyId = TenantContext.getCurrentCompanyId();
+
         User user = new User();
         user.setId(request.getId());
+        user.setCompanyId(companyId);
         user.setEmail(request.getEmail());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -47,22 +56,43 @@ public class UserService {
     }
 
     public UserResponse getUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Long companyId = TenantContext.getCurrentCompanyId();
+        User user;
+        if (companyId != null) {
+            user = userRepository.findByIdAndCompanyId(id, companyId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        } else {
+            // Super admin path — no tenant scoping
+            user = userRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        }
         return toResponse(user);
     }
 
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
+        Long companyId = TenantContext.getCurrentCompanyId();
+        if (companyId == null) {
+            throw new IllegalStateException("No tenant context. Use the Super Admin API for platform-wide user queries.");
+        }
+        return userRepository.findByCompanyId(companyId).stream().map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<UserResponse> getUsersByRole(String role) {
-        return userRepository.findByRole(com.procureai.user.entity.UserRole.valueOf(role.toUpperCase()))
+        Long companyId = TenantContext.getCurrentCompanyId();
+        if (companyId == null) {
+            throw new IllegalStateException("No tenant context.");
+        }
+        return userRepository.findByCompanyIdAndRole(companyId,
+                com.procureai.user.entity.UserRole.valueOf(role.toUpperCase()))
                 .stream().map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<UserResponse> getUsersByDepartment(Long departmentId) {
-        return userRepository.findByDepartmentId(departmentId)
+        Long companyId = TenantContext.getCurrentCompanyId();
+        if (companyId == null) {
+            throw new IllegalStateException("No tenant context.");
+        }
+        return userRepository.findByCompanyIdAndDepartmentId(companyId, departmentId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
     }
 

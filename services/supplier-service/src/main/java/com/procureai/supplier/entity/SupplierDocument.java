@@ -11,8 +11,8 @@ public class SupplierDocument {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long supplierId;
+    @Column(name = "supplier_profile_id", nullable = false)
+    private Long supplierProfileId;
 
     @Column(nullable = false)
     private String documentName;
@@ -31,8 +31,8 @@ public class SupplierDocument {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public Long getSupplierId() { return supplierId; }
-    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public Long getSupplierProfileId() { return supplierProfileId; }
+    public void setSupplierProfileId(Long supplierProfileId) { this.supplierProfileId = supplierProfileId; }
     public String getDocumentName() { return documentName; }
     public void setDocumentName(String documentName) { this.documentName = documentName; }
     public String getDocumentType() { return documentType; }

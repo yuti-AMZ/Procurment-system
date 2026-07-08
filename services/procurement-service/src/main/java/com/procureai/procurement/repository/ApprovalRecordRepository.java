@@ -8,4 +8,5 @@ import java.util.List;
 public interface ApprovalRecordRepository extends JpaRepository<ApprovalRecord, Long> {
     List<ApprovalRecord> findByPurchaseRequestIdOrderByStepOrderAsc(Long purchaseRequestId);
     long countByPurchaseRequestIdAndStatus(Long purchaseRequestId, ApprovalStatus status);
+    List<ApprovalRecord> findByPurchaseRequestIdAndCompanyIdOrderByStepOrderAsc(Long purchaseRequestId, Long companyId);
 }

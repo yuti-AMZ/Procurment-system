@@ -1,5 +1,5 @@
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY target/procurement-service-*.jar app.jar
-EXPOSE 8082
+EXPOSE 8088
 ENTRYPOINT ["java", "-jar", "app.jar"]

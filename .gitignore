@@ -1,5 +1,11 @@
 # Logs
 *.log
+*.log.*
+
+# Python compiled files
+**/__pycache__/
+**/*.pyc
+**/*.pyo
 
 # Dependencies
 frontend/node_modules/
@@ -18,6 +24,9 @@ frontend/build/
 .env
 .env.local
 .env.*.local
+
+# Kubernetes secrets (never commit real values)
+k8s/secrets/secrets.yaml
 
 # IDE
 .idea/
@@ -41,3 +50,9 @@ infrastructure/data/
 *.class
 *.pyc
 *~
+
+# Root-level duplicates & temp files
+api-gateway/
+start-all.ps1
+stop-all.ps1
+test-gateway.ps1

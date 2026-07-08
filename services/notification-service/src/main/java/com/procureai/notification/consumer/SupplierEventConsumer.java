@@ -44,6 +44,7 @@ public class SupplierEventConsumer {
         }
 
         notificationService.createNotification(
+                event.getCompanyId(),
                 null, event.getEmail(), title, message,
                 "SUPPLIER_" + event.getEventType(), "/suppliers/" + event.getSupplierId(),
                 "supplier-service"

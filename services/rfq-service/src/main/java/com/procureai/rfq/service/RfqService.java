@@ -1,6 +1,9 @@
 package com.procureai.rfq.service;
 
+import com.procureai.common.audit.AuditLogger;
 import com.procureai.common.event.RfqEvent;
+import com.procureai.common.gate.FeatureGate;
+import com.procureai.common.security.TenantContext;
 import com.procureai.rfq.dto.*;
 import com.procureai.rfq.entity.*;
 import com.procureai.rfq.exception.BusinessException;
@@ -26,21 +29,29 @@ public class RfqService {
     private final RfqLineItemRepository lineItemRepository;
     private final RfqSupplierRepository rfqSupplierRepository;
     private final RfqEventProducer eventProducer;
+    private final FeatureGate featureGate;
+    private final AuditLogger auditLogger;
 
     public RfqService(RfqRepository rfqRepository,
                       RfqLineItemRepository lineItemRepository,
                       RfqSupplierRepository rfqSupplierRepository,
-                      RfqEventProducer eventProducer) {
+                      RfqEventProducer eventProducer,
+                      FeatureGate featureGate,
+                      AuditLogger auditLogger) {
         this.rfqRepository = rfqRepository;
         this.lineItemRepository = lineItemRepository;
         this.rfqSupplierRepository = rfqSupplierRepository;
         this.eventProducer = eventProducer;
+        this.featureGate = featureGate;
+        this.auditLogger = auditLogger;
     }
 
     @Transactional
     public RfqResponse createRfq(RfqCreateRequest request) {
+        featureGate.require("RFQ");
         Rfq rfq = new Rfq();
         rfq.setRfqNumber(generateRfqNumber());
+        rfq.setCompanyId(TenantContext.getCurrentCompanyId());
         rfq.setTitle(request.getTitle());
         rfq.setDescription(request.getDescription());
         rfq.setRequestedBy(request.getRequestedBy());
@@ -79,14 +90,20 @@ public class RfqService {
         event.setDescription(rfq.getDescription());
         event.setDeadline(rfq.getDeadline());
         event.setStatus(rfq.getStatus().name());
+        event.setCompanyId(TenantContext.getCurrentCompanyId());
         eventProducer.sendRfqCreated(event);
+
+        auditLogger.log("RFQ_CREATED", "Rfq", rfq.getId(),
+                TenantContext.getCurrentCompanyId(), null, "RFQ created: " + rfq.getRfqNumber());
 
         return toRfqResponse(rfq);
     }
 
     @Transactional
     public RfqResponse updateRfq(Long id, RfqUpdateRequest request) {
-        Rfq rfq = rfqRepository.findById(id)
+        featureGate.require("RFQ");
+        Long companyId = TenantContext.getCurrentCompanyId();
+        Rfq rfq = rfqRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("RFQ not found: " + id));
         if (rfq.getStatus() != RfqStatus.DRAFT) {
             throw new BusinessException("Can only update RFQ in DRAFT status");
@@ -126,29 +143,33 @@ public class RfqService {
     }
 
     public RfqResponse getRfq(Long id) {
-        Rfq rfq = rfqRepository.findById(id)
+        Long companyId = TenantContext.getCurrentCompanyId();
+        Rfq rfq = rfqRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("RFQ not found: " + id));
         return toRfqResponse(rfq);
     }
 
     public List<RfqResponse> listRfqs(String status) {
+        Long companyId = TenantContext.getCurrentCompanyId();
         List<Rfq> rfqs;
         if (status != null && !status.isBlank()) {
             try {
                 RfqStatus rfqStatus = RfqStatus.valueOf(status.toUpperCase());
-                rfqs = rfqRepository.findByStatusOrderByCreatedAtDesc(rfqStatus);
+                rfqs = rfqRepository.findByCompanyIdAndStatusOrderByCreatedAtDesc(companyId, rfqStatus);
             } catch (IllegalArgumentException e) {
                 throw new BusinessException("Invalid status: " + status);
             }
         } else {
-            rfqs = rfqRepository.findAllByOrderByCreatedAtDesc();
+            rfqs = rfqRepository.findByCompanyIdOrderByCreatedAtDesc(companyId);
         }
         return rfqs.stream().map(this::toRfqResponse).toList();
     }
 
     @Transactional
     public RfqResponse publishRfq(Long id, RfqPublishRequest request) {
-        Rfq rfq = rfqRepository.findById(id)
+        featureGate.require("RFQ");
+        Long companyId = TenantContext.getCurrentCompanyId();
+        Rfq rfq = rfqRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("RFQ not found: " + id));
         if (rfq.getStatus() != RfqStatus.DRAFT) {
             throw new BusinessException("Only DRAFT RFQs can be published");
@@ -174,14 +195,20 @@ public class RfqService {
         event.setDeadline(rfq.getDeadline());
         event.setSupplierIds(request.getSupplierIds());
         event.setStatus(rfq.getStatus().name());
+        event.setCompanyId(TenantContext.getCurrentCompanyId());
         eventProducer.sendRfqPublished(event);
+
+        auditLogger.log("RFQ_PUBLISHED", "Rfq", rfq.getId(),
+                TenantContext.getCurrentCompanyId(), null, "RFQ published: " + rfq.getRfqNumber());
 
         return toRfqResponse(rfq);
     }
 
     @Transactional
     public RfqResponse closeRfq(Long id) {
-        Rfq rfq = rfqRepository.findById(id)
+        featureGate.require("RFQ");
+        Long companyId = TenantContext.getCurrentCompanyId();
+        Rfq rfq = rfqRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("RFQ not found: " + id));
         if (rfq.getStatus() != RfqStatus.OPEN) {
             throw new BusinessException("Only OPEN RFQs can be closed");
@@ -194,7 +221,9 @@ public class RfqService {
 
     @Transactional
     public RfqResponse awardRfq(Long id, RfqAwardRequest request) {
-        Rfq rfq = rfqRepository.findById(id)
+        featureGate.require("RFQ");
+        Long companyId = TenantContext.getCurrentCompanyId();
+        Rfq rfq = rfqRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("RFQ not found: " + id));
         if (rfq.getStatus() != RfqStatus.CLOSED && rfq.getStatus() != RfqStatus.OPEN) {
             throw new BusinessException("Can only award an OPEN or CLOSED RFQ");
@@ -212,24 +241,38 @@ public class RfqService {
         rfq.setAwardRemarks(request.getRemarks());
         rfq.setClosedAt(LocalDate.now());
         rfq = rfqRepository.save(rfq);
+
+        auditLogger.log("RFQ_AWARDED", "Rfq", rfq.getId(),
+                TenantContext.getCurrentCompanyId(), null,
+                "RFQ awarded to supplier: " + request.getSupplierName());
+
         return toRfqResponse(rfq);
     }
 
     @Transactional
     public RfqResponse cancelRfq(Long id) {
-        Rfq rfq = rfqRepository.findById(id)
+        featureGate.require("RFQ");
+        Long companyId = TenantContext.getCurrentCompanyId();
+        Rfq rfq = rfqRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("RFQ not found: " + id));
         if (rfq.getStatus() == RfqStatus.AWARDED || rfq.getStatus() == RfqStatus.CANCELLED) {
             throw new BusinessException("Cannot cancel an AWARDED or already CANCELLED RFQ");
         }
         rfq.setStatus(RfqStatus.CANCELLED);
         rfq = rfqRepository.save(rfq);
+
+        auditLogger.log("RFQ_CANCELLED", "Rfq", rfq.getId(),
+                TenantContext.getCurrentCompanyId(), null, "RFQ cancelled: " + rfq.getRfqNumber());
+
         return toRfqResponse(rfq);
     }
 
     public void addSupplierToRfq(Long rfqId, Long supplierId, String supplierName) {
         Rfq rfq = rfqRepository.findById(rfqId).orElse(null);
-        if (rfq == null || rfq.getStatus() != RfqStatus.DRAFT) return;
+        if (rfq == null) return;
+        Long companyId = TenantContext.getCurrentCompanyId();
+        if (!companyId.equals(rfq.getCompanyId())) return;
+        if (rfq.getStatus() != RfqStatus.DRAFT) return;
 
         boolean already = rfq.getInvitedSuppliers().stream()
                 .anyMatch(s -> s.getSupplierId().equals(supplierId));

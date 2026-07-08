@@ -22,6 +22,9 @@ public class PurchaseOrder {
     private PurchaseRequest purchaseRequest;
 
     @Column(nullable = false)
+    private Long companyId;
+
+    @Column(nullable = false)
     private String vendorName;
 
     private Long vendorId;
@@ -64,6 +67,8 @@ public class PurchaseOrder {
     public void setPurchaseRequest(PurchaseRequest purchaseRequest) { this.purchaseRequest = purchaseRequest; }
     public String getVendorName() { return vendorName; }
     public void setVendorName(String vendorName) { this.vendorName = vendorName; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public Long getVendorId() { return vendorId; }
     public void setVendorId(Long vendorId) { this.vendorId = vendorId; }
     public POStatus getStatus() { return status; }

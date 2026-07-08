@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 public class NotificationResponse {
 
     private Long id;
+    private Long companyId;
     private String recipientUserId;
     private String recipientEmail;
     private String title;
@@ -19,6 +20,8 @@ public class NotificationResponse {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public String getRecipientUserId() { return recipientUserId; }
     public void setRecipientUserId(String recipientUserId) { this.recipientUserId = recipientUserId; }
     public String getRecipientEmail() { return recipientEmail; }

@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useI18n } from "@/lib/i18n-provider";
 import { listPRs } from "@/lib/api";
 function getCurrentUser() {
   try {
@@ -13,7 +12,6 @@ function getCurrentUser() {
   }
 }
 export default function EmployeeDashboardPage() {
-  const { t } = useI18n();
   const user = getCurrentUser();
   const userId = user.id;
   const [prs, setPrs] = useState<any[]>([]);
@@ -40,10 +38,10 @@ export default function EmployeeDashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">
-          {t("portal.employee.dashboard.title")}
+          Employee Dashboard
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {t("portal.employee.dashboard.subtitle")}
+          View and manage your purchase requests
         </p>
       </div>
       {loading ? (
@@ -53,15 +51,15 @@ export default function EmployeeDashboardPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label={t("portal.employee.stats.myRequests")} value={String(totalRequests)} />
-            <StatCard label={t("portal.employee.stats.pending")} value={String(pending)} />
-            <StatCard label={t("portal.employee.stats.approved")} value={String(approved)} />
-            <StatCard label={t("portal.employee.stats.drafts")} value={String(drafts)} />
+            <StatCard label="My Requests" value={String(totalRequests)} />
+            <StatCard label="Pending" value={String(pending)} />
+            <StatCard label="Approved" value={String(approved)} />
+            <StatCard label="Drafts" value={String(drafts)} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle className="">{t("portal.employee.dashboard.recentActivity")}</CardTitle>
+                <CardTitle>Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -80,14 +78,14 @@ export default function EmployeeDashboardPage() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="">{t("portal.employee.dashboard.quickActions")}</CardTitle>
+                <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Link href="/dashboard/employee/purchase-requests/new">
-                  <Button className="w-full">{t("portal.employee.dashboard.newPR")}</Button>
+                  <Button className="w-full">New Purchase Request</Button>
                 </Link>
                 <Link href="/dashboard/employee/purchase-requests">
-                  <Button variant="outline" className="w-full">{t("portal.employee.dashboard.viewPRs")}</Button>
+                  <Button variant="outline" className="w-full">My Purchase Requests</Button>
                 </Link>
               </CardContent>
             </Card>

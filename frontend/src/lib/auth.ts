@@ -1,9 +1,13 @@
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082/api";
+
 export interface UserInfo {
   userId: number;
   email: string;
   firstName: string;
   lastName: string;
-  role: "ADMIN" | "PROCUREMENT" | "MANAGER" | "EMPLOYEE" | "SUPPLIER";
+  role: "ADMIN" | "COMPANY_ADMIN" | "PROCUREMENT" | "MANAGER" | "EMPLOYEE" | "SUPPLIER" | "FINANCE_OFFICER" | "AUDITOR";
+  companyId?: number;
+  companyName?: string;
   accountStatus: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
   emailVerified: boolean;
   message: string;
@@ -29,7 +33,7 @@ export async function refreshAccessToken(): Promise<string | null> {
   if (!refreshToken) return null;
 
   try {
-    const res = await fetch("http://localhost:8082/api/auth/refresh", {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
@@ -67,7 +71,7 @@ export function isAuthenticated(): boolean {
 
 export function isAdmin(): boolean {
   const user = getStoredUser();
-  return user?.role === "ADMIN";
+  return user?.role === "ADMIN" || user?.role === "COMPANY_ADMIN";
 }
 
 export function hasRole(role: string): boolean {
@@ -87,7 +91,7 @@ function removeCookie(name: string) {
 }
 
 export async function login(email: string, password: string) {
-  const res = await fetch("http://localhost:8082/api/auth/login", {
+  const res = await fetch(`${API_BASE}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -119,7 +123,7 @@ export async function register(data: {
   password: string;
   role: string;
 }) {
-  const res = await fetch("http://localhost:8082/api/auth/register", {
+  const res = await fetch(`${API_BASE}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -136,7 +140,7 @@ export async function register(data: {
 }
 
 export async function oauthLogin(provider: string, oauthToken: string, email: string, firstName: string, lastName: string) {
-  const res = await fetch("http://localhost:8082/api/auth/oauth", {
+  const res = await fetch(`${API_BASE}/auth/oauth`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ provider, oauthToken, email, firstName, lastName }),

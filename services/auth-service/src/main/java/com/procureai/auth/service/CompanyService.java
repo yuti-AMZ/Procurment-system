@@ -1,14 +1,21 @@
 package com.procureai.auth.service;
 
+import com.procureai.auth.cache.FeatureCacheService;
 import com.procureai.auth.dto.*;
 import com.procureai.auth.entity.*;
+import com.procureai.auth.producer.CompanyEventProducer;
 import com.procureai.auth.repository.CompanyRepository;
+import com.procureai.auth.repository.OrganizationSubscriptionRepository;
+import com.procureai.auth.repository.SubscriptionPlanRepository;
 import com.procureai.auth.repository.UserRepository;
+import com.procureai.common.event.CompanyEvent;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,16 +26,33 @@ public class CompanyService {
     private static final Set<Role> COMPANY_INVITABLE_ROLES = Set.of(
             Role.MANAGER, Role.EMPLOYEE, Role.PROCUREMENT, Role.SUPPLIER);
 
+    private static final String FREE_TRIAL_PLAN_NAME = "Free Trial";
+    private static final int FREE_TRIAL_DAYS = 30;
+    private static final int FREE_TRIAL_MAX_USERS = 5;
+    private static final int FREE_TRIAL_MAX_PRS_PER_MONTH = 10;
+
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final OrganizationSubscriptionRepository organizationSubscriptionRepository;
+    private final FeatureCacheService featureCacheService;
+    private final CompanyEventProducer companyEventProducer;
 
     public CompanyService(CompanyRepository companyRepository,
-                          UserRepository userRepository,
-                          PasswordEncoder passwordEncoder) {
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            SubscriptionPlanRepository subscriptionPlanRepository,
+            OrganizationSubscriptionRepository organizationSubscriptionRepository,
+            FeatureCacheService featureCacheService,
+            CompanyEventProducer companyEventProducer) {
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
+        this.organizationSubscriptionRepository = organizationSubscriptionRepository;
+        this.featureCacheService = featureCacheService;
+        this.companyEventProducer = companyEventProducer;
     }
 
     @Transactional
@@ -55,6 +79,13 @@ public class CompanyService {
         company.setCity(sanitize(request.getCity()));
         company.setCountry(sanitize(request.getCountry()));
         company.setIndustry(sanitize(request.getIndustry()));
+        company.setLanguage("en");
+        company.setCurrency("USD");
+        company.setTimezone("UTC");
+        company.setDateFormat("YYYY-MM-DD");
+        company.setPrimaryColor("#c9a84c");
+        company.setSecondaryColor("#e8d48b");
+        company.setFaviconUrl("/favicon.png");
         company.setStatus(CompanyStatus.PENDING_APPROVAL);
         company = companyRepository.save(company);
 
@@ -63,8 +94,7 @@ public class CompanyService {
                 passwordEncoder.encode(request.getAdminPassword()),
                 sanitize(request.getAdminFirstName()),
                 sanitize(request.getAdminLastName()),
-                Role.COMPANY_ADMIN
-        );
+                Role.COMPANY_ADMIN);
         admin.setCompanyId(company.getId());
         admin.setAccountStatus(AccountStatus.PENDING_APPROVAL);
         admin.setEmailVerified(true);
@@ -75,25 +105,90 @@ public class CompanyService {
     }
 
     @Transactional
+    public CompanyResponse adminCreateCompany(CompanyRegisterRequest request) {
+        String companyEmail = request.getCompanyEmail().trim().toLowerCase();
+        String adminEmail = request.getAdminEmail().trim().toLowerCase();
+
+        if (companyRepository.existsByEmail(companyEmail)) {
+            throw new BadCredentialsException("A company with this email already exists");
+        }
+        if (companyRepository.existsByRegistrationNumber(request.getRegistrationNumber().trim())) {
+            throw new BadCredentialsException("A company with this registration number already exists");
+        }
+        if (userRepository.existsByEmail(adminEmail)) {
+            throw new BadCredentialsException("An account with this admin email already exists");
+        }
+
+        Company company = new Company();
+        company.setName(sanitize(request.getCompanyName()));
+        company.setRegistrationNumber(request.getRegistrationNumber().trim());
+        company.setEmail(companyEmail);
+        company.setPhone(sanitize(request.getPhone()));
+        company.setAddress(sanitize(request.getAddress()));
+        company.setCity(sanitize(request.getCity()));
+        company.setCountry(sanitize(request.getCountry()));
+        company.setIndustry(sanitize(request.getIndustry()));
+        company.setLanguage("en");
+        company.setCurrency("USD");
+        company.setTimezone("UTC");
+        company.setDateFormat("YYYY-MM-DD");
+        company.setPrimaryColor("#c9a84c");
+        company.setSecondaryColor("#e8d48b");
+        company.setFaviconUrl("/favicon.png");
+        company.setStatus(CompanyStatus.APPROVED);
+        company = companyRepository.save(company);
+
+        User admin = new User(
+                adminEmail,
+                passwordEncoder.encode(request.getAdminPassword()),
+                sanitize(request.getAdminFirstName()),
+                sanitize(request.getAdminLastName()),
+                Role.COMPANY_ADMIN);
+        admin.setCompanyId(company.getId());
+        admin.setAccountStatus(AccountStatus.APPROVED);
+        admin.setEnabled(true);
+        admin.setEmailVerified(true);
+        userRepository.save(admin);
+
+        return toCompanyResponse(company);
+    }
+
+    @Transactional
     public void approveCompany(Long superAdminId, CompanyApprovalRequest request) {
         User superAdmin = requireSuperAdmin(superAdminId);
 
         Company company = companyRepository.findById(request.getCompanyId())
                 .orElseThrow(() -> new BadCredentialsException("Company not found"));
 
+        User admin = userRepository.findByCompanyIdOrderByCreatedAtDesc(company.getId()).stream()
+                .filter(u -> u.getRole() == Role.COMPANY_ADMIN)
+                .findFirst()
+                .orElse(null);
+
         if (request.isApproved()) {
             company.setStatus(CompanyStatus.APPROVED);
             company.setRejectionReason(null);
             companyRepository.save(company);
 
-            userRepository.findByCompanyIdOrderByCreatedAtDesc(company.getId()).stream()
-                    .filter(u -> u.getRole() == Role.COMPANY_ADMIN)
-                    .findFirst()
-                    .ifPresent(admin -> {
-                        admin.setAccountStatus(AccountStatus.APPROVED);
-                        admin.setEnabled(true);
-                        userRepository.save(admin);
-                    });
+            if (admin != null) {
+                admin.setAccountStatus(AccountStatus.APPROVED);
+                admin.setEnabled(true);
+                userRepository.save(admin);
+            }
+
+            provisionDefaultSubscription(company);
+
+            CompanyEvent event = new CompanyEvent("COMPANY_APPROVED", "auth-service");
+            event.setCompanyId(company.getId());
+            event.setCompanyName(company.getName());
+            event.setCompanyEmail(company.getEmail());
+            event.setStatus("APPROVED");
+            if (admin != null) {
+                event.setAdminEmail(admin.getEmail());
+                event.setAdminFirstName(admin.getFirstName());
+                event.setAdminLastName(admin.getLastName());
+            }
+            companyEventProducer.sendCompanyApproved(event);
         } else {
             company.setStatus(CompanyStatus.REJECTED);
             company.setRejectionReason(request.getRejectionReason());
@@ -104,7 +199,53 @@ public class CompanyService {
                 u.setEnabled(false);
                 userRepository.save(u);
             });
+
+            CompanyEvent event = new CompanyEvent("COMPANY_REJECTED", "auth-service");
+            event.setCompanyId(company.getId());
+            event.setCompanyName(company.getName());
+            event.setCompanyEmail(company.getEmail());
+            event.setStatus("REJECTED");
+            event.setRejectionReason(request.getRejectionReason());
+            if (admin != null) {
+                event.setAdminEmail(admin.getEmail());
+                event.setAdminFirstName(admin.getFirstName());
+                event.setAdminLastName(admin.getLastName());
+            }
+            companyEventProducer.sendCompanyRejected(event);
         }
+    }
+
+    private void provisionDefaultSubscription(Company company) {
+        SubscriptionPlan freeTrialPlan = subscriptionPlanRepository.findByNameIgnoreCase(FREE_TRIAL_PLAN_NAME)
+                .orElseGet(() -> {
+                    SubscriptionPlan plan = new SubscriptionPlan();
+                    plan.setName(FREE_TRIAL_PLAN_NAME);
+                    plan.setDescription("30-day free trial with limited features");
+                    plan.setPrice(BigDecimal.ZERO);
+                    plan.setCurrency("USD");
+                    plan.setInterval("MONTHLY");
+                    plan.setFeatures("USER_MANAGEMENT,PURCHASE_REQUESTS,APPROVAL_WORKFLOW,REPORTING");
+                    plan.setActive(true);
+                    return subscriptionPlanRepository.save(plan);
+                });
+
+        OrganizationSubscription subscription = new OrganizationSubscription();
+        subscription.setCompanyId(company.getId());
+        subscription.setPlanId(freeTrialPlan.getId());
+        subscription.setPlanName(freeTrialPlan.getName());
+        subscription.setPrice(freeTrialPlan.getPrice());
+        subscription.setCurrency(freeTrialPlan.getCurrency());
+        subscription.setStatus("ACTIVE");
+        subscription.setStartDate(LocalDate.now());
+        subscription.setEndDate(LocalDate.now().plusDays(FREE_TRIAL_DAYS));
+        subscription.setAutoRenew(false);
+        organizationSubscriptionRepository.save(subscription);
+
+        company.setMaxUsers(FREE_TRIAL_MAX_USERS);
+        company.setMaxPurchaseRequestsPerMonth(FREE_TRIAL_MAX_PRS_PER_MONTH);
+        companyRepository.save(company);
+
+        featureCacheService.refreshCompany(company.getId());
     }
 
     public List<CompanyResponse> getPendingCompanies() {
@@ -143,8 +284,7 @@ public class CompanyService {
                 passwordEncoder.encode(request.getPassword()),
                 sanitize(request.getFirstName()),
                 sanitize(request.getLastName()),
-                request.getRole()
-        );
+                request.getRole());
         user.setCompanyId(admin.getCompanyId());
         user.setAccountStatus(AccountStatus.PENDING_APPROVAL);
         user.setEmailVerified(true);
@@ -185,7 +325,7 @@ public class CompanyService {
         requireCompanyAdmin(admin);
 
         return userRepository.findByCompanyIdAndAccountStatus(
-                        admin.getCompanyId(), AccountStatus.PENDING_APPROVAL)
+                admin.getCompanyId(), AccountStatus.PENDING_APPROVAL)
                 .stream()
                 .filter(u -> u.getRole() != Role.COMPANY_ADMIN)
                 .map(this::toUserResponse)
@@ -201,6 +341,12 @@ public class CompanyService {
                 .stream()
                 .map(this::toUserResponse)
                 .collect(Collectors.toList());
+    }
+
+    public CompanyResponse getTenantBranding(Long requestedCompanyId, User authenticatedUser, String hostHeader) {
+        Company company = resolveTenantCompany(requestedCompanyId, authenticatedUser, hostHeader)
+                .orElse(null);
+        return company != null ? toCompanyResponse(company) : defaultBranding();
     }
 
     public Company requireApprovedCompany(Long companyId) {
@@ -239,6 +385,18 @@ public class CompanyService {
         resp.setCity(company.getCity());
         resp.setCountry(company.getCountry());
         resp.setIndustry(company.getIndustry());
+        resp.setLogoUrl(company.getLogoUrl());
+        resp.setPrimaryColor(company.getPrimaryColor());
+        resp.setSecondaryColor(company.getSecondaryColor());
+        resp.setFaviconUrl(company.getFaviconUrl());
+        resp.setLanguage(company.getLanguage());
+        resp.setCurrency(company.getCurrency());
+        resp.setTimezone(company.getTimezone());
+        resp.setDateFormat(company.getDateFormat());
+        resp.setSubdomain(company.getSubdomain());
+        resp.setCustomDomain(company.getCustomDomain());
+        resp.setMaxUsers(company.getMaxUsers());
+        resp.setMaxPurchaseRequestsPerMonth(company.getMaxPurchaseRequestsPerMonth());
         resp.setStatus(company.getStatus());
         resp.setRejectionReason(company.getRejectionReason());
         resp.setCreatedAt(company.getCreatedAt());
@@ -250,6 +408,44 @@ public class CompanyService {
                     resp.setAdminName(admin.getFirstName() + " " + admin.getLastName());
                     resp.setAdminEmail(admin.getEmail());
                 });
+        return resp;
+    }
+
+    private java.util.Optional<Company> resolveTenantCompany(Long requestedCompanyId, User authenticatedUser, String hostHeader) {
+        if (requestedCompanyId != null) {
+            return companyRepository.findById(requestedCompanyId);
+        }
+        if (authenticatedUser != null && authenticatedUser.getCompanyId() != null) {
+            return companyRepository.findById(authenticatedUser.getCompanyId());
+        }
+        if (hostHeader != null && !hostHeader.isBlank()) {
+            String host = hostHeader.trim().toLowerCase();
+            int colon = host.indexOf(':');
+            final String cleanHost = colon > -1 ? host.substring(0, colon) : host;
+            return companyRepository.findByCustomDomain(cleanHost)
+                    .or(() -> resolveBySubdomain(cleanHost));
+        }
+        return java.util.Optional.empty();
+    }
+
+    private java.util.Optional<Company> resolveBySubdomain(String host) {
+        if (host.contains(".") && !host.startsWith("localhost")) {
+            String subdomain = host.substring(0, host.indexOf('.'));
+            return companyRepository.findBySubdomain(subdomain);
+        }
+        return java.util.Optional.empty();
+    }
+
+    private CompanyResponse defaultBranding() {
+        CompanyResponse resp = new CompanyResponse();
+        resp.setName("ProcureAI");
+        resp.setPrimaryColor("#c9a84c");
+        resp.setSecondaryColor("#e8d48b");
+        resp.setFaviconUrl("/favicon.png");
+        resp.setLanguage("en");
+        resp.setCurrency("USD");
+        resp.setTimezone("UTC");
+        resp.setDateFormat("YYYY-MM-DD");
         return resp;
     }
 
@@ -276,7 +472,8 @@ public class CompanyService {
     }
 
     private String sanitize(String input) {
-        if (input == null) return null;
+        if (input == null)
+            return null;
         return input.trim().replaceAll("<[^>]*>", "");
     }
 }

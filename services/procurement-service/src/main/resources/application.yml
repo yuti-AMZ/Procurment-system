@@ -2,6 +2,8 @@ server:
   port: 8088
 
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     name: procurement-service
   datasource:
@@ -9,6 +11,11 @@ spring:
     username: admin
     password: ${DB_PASSWORD:supersecretpassword}
     driver-class-name: org.postgresql.Driver
+    auth:
+      url: jdbc:postgresql://localhost:5432/auth_db
+      username: admin
+      password: ${DB_PASSWORD:supersecretpassword}
+      driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update

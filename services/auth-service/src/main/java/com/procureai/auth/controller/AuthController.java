@@ -98,6 +98,13 @@ public class AuthController {
         return ResponseEntity.ok(authService.getPendingUsers());
     }
 
+    @PostMapping("/admin/companies")
+    public ResponseEntity<CompanyResponse> adminCreateCompany(
+            @AuthenticationPrincipal User admin,
+            @Valid @RequestBody CompanyRegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(companyService.adminCreateCompany(request));
+    }
+
     @GetMapping("/admin/pending-companies")
     public ResponseEntity<List<CompanyResponse>> getPendingCompanies(@AuthenticationPrincipal User admin) {
         return ResponseEntity.ok(companyService.getPendingCompanies());

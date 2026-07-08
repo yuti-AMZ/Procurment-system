@@ -23,6 +23,7 @@ public class NotificationEventConsumer {
                 event.getNotificationType(), event.getTitle(), event.getRecipientEmail());
 
         notificationService.createNotification(
+                event.getCompanyId(),
                 event.getRecipientUserId(),
                 event.getRecipientEmail(),
                 event.getTitle(),

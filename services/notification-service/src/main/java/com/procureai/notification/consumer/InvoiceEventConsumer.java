@@ -45,6 +45,7 @@ public class InvoiceEventConsumer {
         }
 
         notificationService.createNotification(
+                event.getCompanyId(),
                 null, null, title, message,
                 "INVOICE_" + event.getEventType(), "/invoices/" + event.getInvoiceId(),
                 "invoice-service"

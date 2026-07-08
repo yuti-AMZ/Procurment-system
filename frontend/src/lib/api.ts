@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8082/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082/api";
 
 export { API_BASE };
 
@@ -88,12 +88,20 @@ export async function createPR(data: PRCreateRequest) {
     method: "POST",
     body: JSON.stringify(data),
   });
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = "Failed to create purchase request";
+    try { msg = JSON.parse(text).error || msg; } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 export async function listPRs(status?: string) {
   const query = status ? `?status=${status}` : "";
   const res = await authFetch(`/procurement/pr${query}`);
-  return res.json();
+  if (!res.ok) return [];
+  const text = await res.text();
+  try { return JSON.parse(text); } catch { return []; }
 }
 export async function getPR(id: number) {
   const res = await authFetch(`/procurement/pr/${id}`);
@@ -595,6 +603,96 @@ export async function getCurrentUser() {
   return res.json();
 }
 
+// ========== Company API ==========
+
+export interface CompanyRegisterRequest {
+  companyName: string;
+  registrationNumber: string;
+  companyEmail: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  industry?: string;
+  adminFirstName: string;
+  adminLastName: string;
+  adminEmail: string;
+  adminPassword: string;
+}
+
+export interface CompanyUserInviteRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: string;
+}
+
+export async function registerCompany(data: CompanyRegisterRequest) {
+  const res = await fetch(`${API_BASE}/auth/register-company`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Registration failed" }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function adminCreateCompany(data: CompanyRegisterRequest) {
+  const res = await authFetch("/auth/admin/companies", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function getAllCompanies() {
+  const res = await authFetch("/auth/admin/companies");
+  return res.json();
+}
+
+export async function getPendingCompanies() {
+  const res = await authFetch("/auth/admin/pending-companies");
+  return res.json();
+}
+
+export async function approveCompany(companyId: number, approved: boolean, rejectionReason?: string) {
+  const res = await authFetch("/auth/admin/approve-company", {
+    method: "POST",
+    body: JSON.stringify({ companyId, approved, rejectionReason }),
+  });
+  return res.json();
+}
+
+export async function getCompanyUsers() {
+  const res = await authFetch("/auth/company/users");
+  return res.json();
+}
+
+export async function getPendingCompanyUsers() {
+  const res = await authFetch("/auth/company/users/pending");
+  return res.json();
+}
+
+export async function inviteCompanyUser(data: CompanyUserInviteRequest) {
+  const res = await authFetch("/auth/company/users", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function approveCompanyUser(userId: number, approved: boolean, rejectionReason?: string) {
+  const res = await authFetch("/auth/company/users/approve", {
+    method: "POST",
+    body: JSON.stringify({ userId, approved, rejectionReason }),
+  });
+  return res.json();
+}
+
 // ========== AI Service API ==========
 
 export interface SupplierRankingItem {
@@ -667,5 +765,214 @@ export async function getAiRecommendation(
   rfqId: number,
 ): Promise<AiRecommendationResult> {
   const res = await authFetch(`/ai/recommend/${rfqId}`);
+  return res.json();
+}
+
+// ========== Platform Admin API ==========
+
+export async function getAdminAnalytics() {
+  const res = await authFetch("/admin/analytics");
+  return res.json();
+}
+
+// Plans
+export async function listPlans() {
+  const res = await authFetch("/admin/plans");
+  return res.json();
+}
+export async function createPlan(data: Record<string, unknown>) {
+  const res = await authFetch("/admin/plans", { method: "POST", body: JSON.stringify(data) });
+  return res.json();
+}
+export async function updatePlan(id: number, data: Record<string, unknown>) {
+  const res = await authFetch(`/admin/plans/${id}`, { method: "PUT", body: JSON.stringify(data) });
+  return res.json();
+}
+
+// Subscriptions
+export async function listSubscriptions() {
+  const res = await authFetch("/admin/subscriptions");
+  return res.json();
+}
+
+// Invoices
+export async function listAdminInvoices() {
+  const res = await authFetch("/admin/invoices");
+  return res.json();
+}
+
+// Features
+export async function listFeatures() {
+  const res = await authFetch("/admin/features");
+  return res.json();
+}
+
+// ========== Tenant Branding API ==========
+
+export interface TenantBrandingResponse {
+  id?: number;
+  name?: string;
+  logoUrl?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  faviconUrl?: string;
+  language?: string;
+  currency?: string;
+  timezone?: string;
+  dateFormat?: string;
+  subdomain?: string;
+  customDomain?: string;
+  maxUsers?: number;
+  maxPurchaseRequestsPerMonth?: number;
+}
+
+export async function getTenantBranding() {
+  const res = await authFetch("/tenant/branding");
+  return res.json();
+}
+
+// ========== Platform Admin API ==========
+
+export interface PlatformDashboardResponse {
+  totalCompanies: number;
+  pendingCompanies: number;
+  approvedCompanies: number;
+  suspendedCompanies: number;
+  totalUsers: number;
+  activeUsers: number;
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  totalInvoices: number;
+  paidInvoices: number;
+  totalRevenue: number;
+  collectedRevenue: number;
+  mrr: number;
+}
+
+export interface RevenueOverviewResponse {
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  totalInvoices: number;
+  paidInvoices: number;
+  overdueInvoices: number;
+  totalRevenue: number;
+  collectedRevenue: number;
+  mrr: number;
+}
+
+export interface ServiceHealthResponse {
+  service: string;
+  url: string;
+  status: string;
+  statusCode: number;
+  responseTimeMs: number;
+}
+
+export async function getPlatformAdminDashboard() {
+  const res = await authFetch("/platform/admin/dashboard");
+  return res.json();
+}
+
+export async function listPlatformCompanies() {
+  const res = await authFetch("/platform/admin/companies");
+  return res.json();
+}
+
+export async function approvePlatformCompany(id: number) {
+  const res = await authFetch(`/platform/admin/companies/${id}/approve`, {
+    method: "PUT",
+  });
+  return res.json();
+}
+
+export async function suspendPlatformCompany(id: number) {
+  const res = await authFetch(`/platform/admin/companies/${id}/suspend`, {
+    method: "PUT",
+  });
+  return res.json();
+}
+
+export async function getPlatformRevenueOverview() {
+  const res = await authFetch("/platform/admin/subscriptions");
+  return res.json();
+}
+
+export async function getPlatformSystemHealth() {
+  const res = await authFetch("/platform/admin/system/health");
+  return res.json();
+}
+
+export async function listPlatformAuditLogs() {
+  const res = await authFetch("/platform/admin/audit-logs");
+  return res.json();
+}
+
+export async function createPlatformPlan(data: Record<string, unknown>) {
+  const res = await authFetch("/platform/admin/plans", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+export async function toggleFeature(id: number, enabled: boolean) {
+  const res = await authFetch(`/admin/features/${id}/toggle?enabled=${enabled}`, { method: "PUT" });
+  return res.json();
+}
+
+// API Keys
+export async function listApiKeys() {
+  const res = await authFetch("/admin/api-keys");
+  return res.json();
+}
+export async function generateApiKey(name: string, companyId: number, createdBy: number) {
+  const res = await authFetch(`/admin/api-keys/generate?name=${encodeURIComponent(name)}&companyId=${companyId}&createdBy=${createdBy}`, { method: "POST" });
+  return res.json();
+}
+export async function revokeApiKey(id: number) {
+  await authFetch(`/admin/api-keys/${id}/revoke`, { method: "POST" });
+}
+
+// Webhooks
+export async function listWebhooks() {
+  const res = await authFetch("/admin/webhooks");
+  return res.json();
+}
+export async function createWebhook(data: Record<string, unknown>) {
+  const res = await authFetch("/admin/webhooks", { method: "POST", body: JSON.stringify(data) });
+  return res.json();
+}
+export async function toggleWebhook(id: number, status: string) {
+  await authFetch(`/admin/webhooks/${id}/status?status=${status}`, { method: "PUT" });
+}
+
+// Audit Logs
+export async function listAuditLogs() {
+  const res = await authFetch("/admin/audit-logs");
+  return res.json();
+}
+
+// Settings
+export async function listSettings() {
+  const res = await authFetch("/admin/settings");
+  return res.json();
+}
+export async function updateSetting(data: Record<string, string>) {
+  const res = await authFetch("/admin/settings", { method: "PUT", body: JSON.stringify(data) });
+  return res.json();
+}
+
+// Support Tickets
+export async function listTickets() {
+  const res = await authFetch("/admin/tickets");
+  return res.json();
+}
+export async function createTicket(data: Record<string, unknown>) {
+  const res = await authFetch("/admin/tickets", { method: "POST", body: JSON.stringify(data) });
+  return res.json();
+}
+export async function updateTicketStatus(id: number, status: string, resolution?: string) {
+  let url = `/admin/tickets/${id}/status?status=${status}`;
+  if (resolution) url += `&resolution=${encodeURIComponent(resolution)}`;
+  const res = await authFetch(url, { method: "PUT" });
   return res.json();
 }

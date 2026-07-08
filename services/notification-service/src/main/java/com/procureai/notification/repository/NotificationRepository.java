@@ -10,4 +10,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByRecipientUserIdAndStatusOrderByCreatedAtDesc(
             String recipientUserId, NotificationStatus status);
     long countByRecipientUserIdAndStatus(String recipientUserId, NotificationStatus status);
+    List<Notification> findByCompanyIdAndRecipientUserIdOrderByCreatedAtDesc(Long companyId, String recipientUserId);
+    List<Notification> findByCompanyIdAndRecipientUserIdAndStatusOrderByCreatedAtDesc(Long companyId, String recipientUserId, NotificationStatus status);
+    long countByCompanyIdAndRecipientUserIdAndStatus(Long companyId, String recipientUserId, NotificationStatus status);
+    List<Notification> findByCompanyIdAndRecipientUserIdAndStatus(Long companyId, String recipientUserId, NotificationStatus status);
 }

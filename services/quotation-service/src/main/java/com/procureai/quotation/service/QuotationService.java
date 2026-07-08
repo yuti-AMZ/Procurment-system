@@ -1,6 +1,9 @@
 package com.procureai.quotation.service;
 
+import com.procureai.common.audit.AuditLogger;
 import com.procureai.common.event.QuotationEvent;
+import com.procureai.common.gate.FeatureGate;
+import com.procureai.common.security.TenantContext;
 import com.procureai.quotation.dto.*;
 import com.procureai.quotation.entity.*;
 import com.procureai.quotation.exception.BusinessException;
@@ -25,19 +28,27 @@ public class QuotationService {
     private final QuotationRepository quotationRepository;
     private final QuotationLineItemRepository lineItemRepository;
     private final QuotationEventProducer eventProducer;
+    private final FeatureGate featureGate;
+    private final AuditLogger auditLogger;
 
     public QuotationService(QuotationRepository quotationRepository,
                             QuotationLineItemRepository lineItemRepository,
-                            QuotationEventProducer eventProducer) {
+                            QuotationEventProducer eventProducer,
+                            FeatureGate featureGate,
+                            AuditLogger auditLogger) {
         this.quotationRepository = quotationRepository;
         this.lineItemRepository = lineItemRepository;
         this.eventProducer = eventProducer;
+        this.featureGate = featureGate;
+        this.auditLogger = auditLogger;
     }
 
     @Transactional
     public QuotationResponse createQuotation(QuotationCreateRequest request) {
-        List<Quotation> existing = quotationRepository.findByRfqIdAndSupplierId(
-                request.getRfqId(), request.getSupplierId());
+        featureGate.require("QUOTATION");
+        Long companyId = TenantContext.getCurrentCompanyId();
+        List<Quotation> existing = quotationRepository.findByCompanyIdAndRfqIdAndSupplierId(
+                companyId, request.getRfqId(), request.getSupplierId());
         boolean hasActive = existing.stream()
                 .anyMatch(q -> q.getStatus() == QuotationStatus.DRAFT
                         || q.getStatus() == QuotationStatus.SUBMITTED);
@@ -53,6 +64,7 @@ public class QuotationService {
         q.setSupplierId(request.getSupplierId());
         q.setSupplierName(request.getSupplierName());
         q.setSupplierEmail(request.getSupplierEmail());
+        q.setCompanyId(TenantContext.getCurrentCompanyId());
         q.setStatus(QuotationStatus.DRAFT);
         q.setCurrency(request.getCurrency());
         q.setValidityStartDate(request.getValidityStartDate());
@@ -84,7 +96,8 @@ public class QuotationService {
 
     @Transactional
     public QuotationResponse updateQuotation(Long id, QuotationUpdateRequest request) {
-        Quotation q = quotationRepository.findById(id)
+        Long companyId = TenantContext.getCurrentCompanyId();
+        Quotation q = quotationRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("Quotation not found: " + id));
         if (q.getStatus() != QuotationStatus.DRAFT) {
             throw new BusinessException("Can only update a DRAFT quotation");
@@ -121,7 +134,9 @@ public class QuotationService {
 
     @Transactional
     public QuotationResponse submitQuotation(Long id) {
-        Quotation q = quotationRepository.findById(id)
+        featureGate.require("QUOTATION");
+        Long companyId = TenantContext.getCurrentCompanyId();
+        Quotation q = quotationRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("Quotation not found: " + id));
         if (q.getStatus() != QuotationStatus.DRAFT) {
             throw new BusinessException("Only DRAFT quotations can be submitted");
@@ -143,12 +158,17 @@ public class QuotationService {
         event.setStatus(q.getStatus().name());
         eventProducer.sendQuotationSubmitted(event);
 
+        auditLogger.log("QUOTATION_SUBMITTED", "Quotation", q.getId(),
+                companyId, null, "Quotation submitted: " + q.getQuotationNumber());
+
         return toResponse(q);
     }
 
     @Transactional
     public QuotationResponse evaluateQuotation(Long id, QuotationEvaluateRequest request) {
-        Quotation q = quotationRepository.findById(id)
+        featureGate.require("QUOTATION");
+        Long companyId = TenantContext.getCurrentCompanyId();
+        Quotation q = quotationRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("Quotation not found: " + id));
         if (q.getStatus() != QuotationStatus.SUBMITTED
                 && q.getStatus() != QuotationStatus.UNDER_EVALUATION) {
@@ -171,9 +191,13 @@ public class QuotationService {
 
         q = quotationRepository.save(q);
 
+        auditLogger.log("QUOTATION_EVALUATED", "Quotation", q.getId(),
+                companyId, TenantContext.getCurrentUserId(),
+                "Quotation evaluated: " + q.getQuotationNumber() + ", action: " + request.getAction());
+
         if (newStatus == QuotationStatus.ACCEPTED) {
-            List<Quotation> others = quotationRepository.findByRfqIdAndStatusIn(
-                    q.getRfqId(), List.of(QuotationStatus.SUBMITTED, QuotationStatus.UNDER_EVALUATION));
+            List<Quotation> others = quotationRepository.findByCompanyIdAndRfqIdAndStatusIn(
+                    q.getCompanyId(), q.getRfqId(), List.of(QuotationStatus.SUBMITTED, QuotationStatus.UNDER_EVALUATION));
             for (Quotation other : others) {
                 if (!other.getId().equals(q.getId())) {
                     other.setStatus(QuotationStatus.REJECTED);
@@ -186,39 +210,42 @@ public class QuotationService {
     }
 
     public QuotationResponse getQuotation(Long id) {
-        Quotation q = quotationRepository.findById(id)
+        Long companyId = TenantContext.getCurrentCompanyId();
+        Quotation q = quotationRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("Quotation not found: " + id));
         return toResponse(q);
     }
 
     public List<QuotationResponse> listQuotations(Long rfqId, Long supplierId, String status) {
+        Long companyId = TenantContext.getCurrentCompanyId();
         if (rfqId != null && supplierId != null) {
-            return quotationRepository.findByRfqIdAndSupplierId(rfqId, supplierId)
+            return quotationRepository.findByCompanyIdAndRfqIdAndSupplierId(companyId, rfqId, supplierId)
                     .stream().map(this::toResponse).toList();
         }
         if (rfqId != null) {
-            return quotationRepository.findByRfqIdOrderByTotalAmountAsc(rfqId)
+            return quotationRepository.findByCompanyIdAndRfqIdOrderByTotalAmountAsc(companyId, rfqId)
                     .stream().map(this::toResponse).toList();
         }
         if (supplierId != null) {
-            return quotationRepository.findBySupplierIdOrderByCreatedAtDesc(supplierId)
+            return quotationRepository.findByCompanyIdAndSupplierIdOrderByCreatedAtDesc(companyId, supplierId)
                     .stream().map(this::toResponse).toList();
         }
         if (status != null && !status.isBlank()) {
             try {
                 QuotationStatus qs = QuotationStatus.valueOf(status.toUpperCase());
-                return quotationRepository.findByStatusOrderByCreatedAtDesc(qs)
+                return quotationRepository.findByCompanyIdAndStatusOrderByCreatedAtDesc(companyId, qs)
                         .stream().map(this::toResponse).toList();
             } catch (IllegalArgumentException e) {
                 throw new BusinessException("Invalid status: " + status);
             }
         }
-        return quotationRepository.findAllByOrderByCreatedAtDesc()
+        return quotationRepository.findByCompanyIdOrderByCreatedAtDesc(companyId)
                 .stream().map(this::toResponse).toList();
     }
 
     public QuotationComparisonResponse compareQuotations(Long rfqId) {
-        List<Quotation> quotations = quotationRepository.findByRfqIdOrderByTotalAmountAsc(rfqId);
+        Long companyId = TenantContext.getCurrentCompanyId();
+        List<Quotation> quotations = quotationRepository.findByCompanyIdAndRfqIdOrderByTotalAmountAsc(companyId, rfqId);
 
         QuotationComparisonResponse resp = new QuotationComparisonResponse();
         resp.setRfqId(rfqId);

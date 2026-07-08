@@ -16,6 +16,9 @@ public class Department {
 
     private String description;
 
+    @Column(nullable = false)
+    private Long companyId;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
@@ -33,6 +36,8 @@ public class Department {
     @PreUpdate
     protected void onUpdate() { updatedAt = LocalDateTime.now(); }
 
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }

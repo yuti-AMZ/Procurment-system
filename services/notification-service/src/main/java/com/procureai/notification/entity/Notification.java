@@ -24,6 +24,9 @@ public class Notification {
     private String link;
     private String sourceService;
 
+    @Column(nullable = false)
+    private Long companyId;
+
     @Enumerated(EnumType.STRING)
     private NotificationStatus status;
 
@@ -52,6 +55,8 @@ public class Notification {
     public void setLink(String link) { this.link = link; }
     public String getSourceService() { return sourceService; }
     public void setSourceService(String sourceService) { this.sourceService = sourceService; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public NotificationStatus getStatus() { return status; }
     public void setStatus(NotificationStatus status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }

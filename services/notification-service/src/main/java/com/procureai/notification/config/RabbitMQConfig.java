@@ -132,4 +132,23 @@ public class RabbitMQConfig {
                 .to(invoiceExchange)
                 .with("invoice.#");
     }
+
+    // Auth exchange
+    @Bean
+    public TopicExchange authExchange() {
+        return new TopicExchange("auth.exchange");
+    }
+
+    @Bean
+    public Queue authNotificationQueue() {
+        return new Queue("notification.auth.queue", true);
+    }
+
+    @Bean
+    public Binding authNotificationBinding(Queue authNotificationQueue,
+                                            TopicExchange authExchange) {
+        return BindingBuilder.bind(authNotificationQueue)
+                .to(authExchange)
+                .with("auth.#");
+    }
 }

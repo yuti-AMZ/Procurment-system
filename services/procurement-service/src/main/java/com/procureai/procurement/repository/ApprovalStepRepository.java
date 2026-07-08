@@ -9,4 +9,5 @@ public interface ApprovalStepRepository extends JpaRepository<ApprovalStep, Long
     List<ApprovalStep> findAllByOrderByStepOrderAsc();
     List<ApprovalStep> findByMinAmountLessThanEqualAndMaxAmountGreaterThanEqualOrderByStepOrderAsc(
             BigDecimal minAmount, BigDecimal maxAmount);
+    List<ApprovalStep> findByCompanyIdOrderByStepOrderAsc(Long companyId);
 }

@@ -6,11 +6,11 @@ from typing import Optional
 import psycopg2
 import psycopg2.pool
 
-DB_HOST = os.getenv("AI_DB_HOST", "localhost")
-DB_PORT = int(os.getenv("AI_DB_PORT", "5432"))
-DB_NAME = os.getenv("AI_DB_NAME", "ai_db")
-DB_USER = os.getenv("AI_DB_USER", "admin")
-DB_PASSWORD = os.getenv("AI_DB_PASSWORD", "supersecretpassword")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = int(os.getenv("DB_PORT", "5432"))
+DB_NAME = os.getenv("DB_NAME", "ai_db")
+DB_USER = os.getenv("DB_USER", "admin")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "supersecretpassword")
 
 _pool = None
 

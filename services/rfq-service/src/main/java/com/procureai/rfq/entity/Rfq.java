@@ -14,6 +14,9 @@ public class Rfq {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private Long companyId;
+
     @Column(nullable = false, unique = true)
     private String rfqNumber;
 
@@ -60,6 +63,8 @@ public class Rfq {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public String getRfqNumber() { return rfqNumber; }
     public void setRfqNumber(String rfqNumber) { this.rfqNumber = rfqNumber; }
     public String getTitle() { return title; }

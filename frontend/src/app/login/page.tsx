@@ -3,19 +3,17 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/lib/i18n-provider";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import LanguageSwitcher from "@/components/ui/language-switcher";
 import { useState } from "react";
-import { login, oauthLogin } from "@/lib/auth";
+import { login } from "@/lib/auth";
 export default function LoginPage() {
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pendingApproval, setPendingApproval] = useState(false);
   const [rejectedAccount, setRejectedAccount] = useState(false);
-  const [unverifiedEmail, setUnverifiedEmail] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +21,6 @@ export default function LoginPage() {
     setError("");
     setPendingApproval(false);
     setRejectedAccount(false);
-    setUnverifiedEmail(false);
     try {
       const result = await login(form.email, form.password);
       if (result.ok) {
@@ -33,38 +30,12 @@ export default function LoginPage() {
           setPendingApproval(true);
         } else if (result.accountStatus === "REJECTED") {
           setRejectedAccount(true);
-        } else if (result.accountStatus && !result.accountStatus) {
-          setUnverifiedEmail(true);
         } else {
           setError(result.error || "Login failed");
         }
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-  const handleOAuth = async (provider: string) => {
-    setLoading(true);
-    setError("");
-    setPendingApproval(false);
-    setRejectedAccount(false);
-    setUnverifiedEmail(false);
-    try {
-      const mockToken = "oauth-mock-" + provider + "-" + Date.now();
-      const result = await oauthLogin(provider, mockToken, form.email || "user@" + provider + ".com", provider + "User", "User");
-      if (result.ok) {
-        window.location.href = "/dashboard";
-      } else if (result.accountStatus === "PENDING_APPROVAL") {
-        setPendingApproval(true);
-      } else if (result.accountStatus === "REJECTED") {
-        setRejectedAccount(true);
-      } else {
-        setError(result.error || "OAuth login failed");
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "OAuth login failed");
     } finally {
       setLoading(false);
     }
@@ -175,21 +146,6 @@ export default function LoginPage() {
               {loading ? "Signing in..." : t("login.submit")}
             </Button>
           </form>
-          <div className="flex items-center gap-3 my-6">
-            <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">
-              {t("login.divider")}
-            </span>
-            <Separator className="flex-1" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="secondary" className="w-full" onClick={() => handleOAuth("google")} disabled={loading}>
-              Google
-            </Button>
-            <Button variant="secondary" className="w-full" onClick={() => handleOAuth("github")} disabled={loading}>
-              GitHub
-            </Button>
-          </div>
         </div>
         <p className="text-center text-sm text-muted-foreground mt-8">
           {t("login.noAccount")}{" "}

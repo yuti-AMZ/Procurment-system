@@ -30,6 +30,9 @@ public class Quotation {
 
     private String supplierEmail;
 
+    @Column(nullable = false)
+    private Long companyId;
+
     @Enumerated(EnumType.STRING)
     private QuotationStatus status;
 
@@ -81,6 +84,8 @@ public class Quotation {
     public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
     public String getSupplierEmail() { return supplierEmail; }
     public void setSupplierEmail(String supplierEmail) { this.supplierEmail = supplierEmail; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public QuotationStatus getStatus() { return status; }
     public void setStatus(QuotationStatus status) { this.status = status; }
     public BigDecimal getTotalAmount() { return totalAmount; }

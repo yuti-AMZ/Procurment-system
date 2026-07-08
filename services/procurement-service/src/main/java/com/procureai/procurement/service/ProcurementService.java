@@ -1,15 +1,24 @@
 package com.procureai.procurement.service;
 
+import com.procureai.common.audit.AuditLogger;
 import com.procureai.common.event.ProcurementEvent;
+import com.procureai.common.gate.FeatureGate;
+import com.procureai.common.model.PlanFeatures;
+import com.procureai.common.security.TenantContext;
+import com.procureai.procurement.config.FeatureFallbackLoader;
 import com.procureai.procurement.dto.*;
 import com.procureai.procurement.entity.*;
 import com.procureai.procurement.exception.BusinessException;
 import com.procureai.procurement.producer.ProcurementEventProducer;
 import com.procureai.procurement.repository.*;
+import com.procureai.procurement.entity.auth.AuthCompany;
+import com.procureai.procurement.repository.auth.AuthCompanyRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +38,10 @@ public class ProcurementService {
     private final ApprovalRecordRepository approvalRecordRepository;
     private final ApprovalService approvalService;
     private final ProcurementEventProducer eventProducer;
+    private final AuthCompanyRepository authCompanyRepository;
+    private final FeatureGate featureGate;
+    private final FeatureFallbackLoader featureFallback;
+    private final AuditLogger auditLogger;
 
     public ProcurementService(PurchaseRequestRepository prRepository,
                               PurchaseRequestItemRepository prItemRepository,
@@ -37,7 +50,11 @@ public class ProcurementService {
                               ApprovalStepRepository approvalStepRepository,
                               ApprovalRecordRepository approvalRecordRepository,
                               ApprovalService approvalService,
-                              ProcurementEventProducer eventProducer) {
+                              ProcurementEventProducer eventProducer,
+                              AuthCompanyRepository authCompanyRepository,
+                              FeatureGate featureGate,
+                              FeatureFallbackLoader featureFallback,
+                              AuditLogger auditLogger) {
         this.prRepository = prRepository;
         this.prItemRepository = prItemRepository;
         this.poRepository = poRepository;
@@ -46,12 +63,36 @@ public class ProcurementService {
         this.approvalRecordRepository = approvalRecordRepository;
         this.approvalService = approvalService;
         this.eventProducer = eventProducer;
+        this.authCompanyRepository = authCompanyRepository;
+        this.featureGate = featureGate;
+        this.featureFallback = featureFallback;
+        this.auditLogger = auditLogger;
     }
 
     @Transactional
     public PRResponse createPR(PRCreateRequest request) {
+        Long companyId = TenantContext.getCurrentCompanyId();
+        if (companyId != null) {
+            PlanFeatures features = featureFallback.getFeaturesWithFallback(companyId);
+            if (!features.isEnabled("PURCHASE_REQUESTS")) {
+                throw new BusinessException("Feature 'PURCHASE_REQUESTS' is not available on your current plan. Upgrade to access this.");
+            }
+        }
+
+        if (companyId != null) {
+            LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+            long currentPrCount = prRepository.countByCompanyIdAndCreatedAtAfter(companyId, monthStart);
+            AuthCompany company = authCompanyRepository.findById(companyId)
+                    .orElseThrow(() -> new BusinessException("Company not found"));
+            Integer maxPrs = company.getMaxPurchaseRequestsPerMonth();
+            if (maxPrs != null && currentPrCount >= maxPrs) {
+                throw new BusinessException("Purchase request limit reached for this month. Please upgrade your subscription plan.");
+            }
+        }
+
         PurchaseRequest pr = new PurchaseRequest();
         pr.setPrNumber(generatePrNumber());
+        pr.setCompanyId(companyId);
         pr.setTitle(request.getTitle());
         pr.setDescription(request.getDescription());
         pr.setRequestedBy(request.getRequestedBy());
@@ -88,14 +129,19 @@ public class ProcurementService {
         event.setDepartment(pr.getDepartment());
         event.setTotalAmount(pr.getTotalAmount());
         event.setStatus(pr.getStatus().name());
+        event.setCompanyId(TenantContext.getCurrentCompanyId());
         eventProducer.sendPrCreated(event);
+
+        auditLogger.log("PR_CREATED", "PurchaseRequest", pr.getId(),
+                TenantContext.getCurrentCompanyId(), null, "PR created: " + pr.getPrNumber());
 
         return toPRResponse(pr);
     }
 
     @Transactional
     public PRResponse updatePR(Long id, PRUpdateRequest request) {
-        PurchaseRequest pr = prRepository.findById(id)
+        Long companyId = TenantContext.getCurrentCompanyId();
+        PurchaseRequest pr = prRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("PR not found: " + id));
         if (pr.getStatus() != PRStatus.DRAFT) {
             throw new BusinessException("Can only update PR in DRAFT status");
@@ -133,7 +179,9 @@ public class ProcurementService {
 
     @Transactional
     public PRResponse submitForApproval(Long id) {
-        PurchaseRequest pr = prRepository.findById(id)
+        featureGate.require("APPROVAL_WORKFLOW");
+        Long companyId = TenantContext.getCurrentCompanyId();
+        PurchaseRequest pr = prRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("PR not found: " + id));
         if (pr.getStatus() != PRStatus.DRAFT) {
             throw new BusinessException("Only DRAFT PRs can be submitted for approval");
@@ -150,16 +198,23 @@ public class ProcurementService {
             event.setDepartment(pr.getDepartment());
             event.setTotalAmount(pr.getTotalAmount());
             event.setStatus(pr.getStatus().name());
+            event.setCompanyId(TenantContext.getCurrentCompanyId());
             eventProducer.sendPrApproved(event);
         }
 
         pr = prRepository.save(pr);
+
+        auditLogger.log("PR_SUBMITTED", "PurchaseRequest", pr.getId(),
+                TenantContext.getCurrentCompanyId(), null,
+                "PR submitted for approval: " + pr.getPrNumber());
+
         return toPRResponse(pr);
     }
 
     @Transactional
     public PRResponse approveOrReject(Long id, ApprovalActionRequest request) {
-        PurchaseRequest pr = prRepository.findById(id)
+        Long companyId = TenantContext.getCurrentCompanyId();
+        PurchaseRequest pr = prRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("PR not found: " + id));
         if (pr.getStatus() != PRStatus.PENDING_APPROVAL) {
             throw new BusinessException("PR is not pending approval");
@@ -205,6 +260,7 @@ public class ProcurementService {
             event.setDepartment(pr.getDepartment());
             event.setTotalAmount(pr.getTotalAmount());
             event.setStatus(pr.getStatus().name());
+            event.setCompanyId(TenantContext.getCurrentCompanyId());
             eventProducer.sendPrApproved(event);
         }
 
@@ -212,29 +268,33 @@ public class ProcurementService {
     }
 
     public PRResponse getPR(Long id) {
-        PurchaseRequest pr = prRepository.findById(id)
+        Long companyId = TenantContext.getCurrentCompanyId();
+        PurchaseRequest pr = prRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("PR not found: " + id));
         return toPRResponse(pr);
     }
 
     public List<PRResponse> listPRs(String status) {
+        Long companyId = TenantContext.getCurrentCompanyId();
         List<PurchaseRequest> prs;
         if (status != null && !status.isBlank()) {
             try {
                 PRStatus prStatus = PRStatus.valueOf(status.toUpperCase());
-                prs = prRepository.findByStatusOrderByCreatedAtDesc(prStatus);
+                prs = prRepository.findByCompanyIdAndStatusOrderByCreatedAtDesc(companyId, prStatus);
             } catch (IllegalArgumentException e) {
                 throw new BusinessException("Invalid status: " + status);
             }
         } else {
-            prs = prRepository.findAllByOrderByCreatedAtDesc();
+            prs = prRepository.findByCompanyIdOrderByCreatedAtDesc(companyId);
         }
         return prs.stream().map(this::toPRResponse).toList();
     }
 
     @Transactional
     public POResponse generatePO(Long id) {
-        PurchaseRequest pr = prRepository.findById(id)
+        featureGate.require("PURCHASE_ORDERS");
+        Long companyId = TenantContext.getCurrentCompanyId();
+        PurchaseRequest pr = prRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("PR not found: " + id));
         if (pr.getStatus() != PRStatus.APPROVED) {
             throw new BusinessException("Only APPROVED PRs can generate PO");
@@ -242,6 +302,7 @@ public class ProcurementService {
 
         PurchaseOrder po = new PurchaseOrder();
         po.setPoNumber(generatePoNumber());
+        po.setCompanyId(companyId);
         po.setPurchaseRequest(pr);
         po.setVendorName(pr.getAssignedSupplierName());
         po.setVendorId(pr.getAssignedSupplierId());
@@ -265,6 +326,10 @@ public class ProcurementService {
         pr.setStatus(PRStatus.PO_GENERATED);
         prRepository.save(pr);
 
+        auditLogger.log("PO_GENERATED", "PurchaseOrder", po.getId(),
+                TenantContext.getCurrentCompanyId(), null,
+                "PO generated: " + po.getPoNumber() + " from PR: " + pr.getPrNumber());
+
         ProcurementEvent event = new ProcurementEvent();
         event.setPrId(pr.getId());
         event.setPrNumber(pr.getPrNumber());
@@ -274,35 +339,39 @@ public class ProcurementService {
         event.setDepartment(pr.getDepartment());
         event.setTotalAmount(po.getTotalAmount());
         event.setStatus(POStatus.GENERATED.name());
+        event.setCompanyId(TenantContext.getCurrentCompanyId());
         eventProducer.sendPoGenerated(event);
 
         return toPOResponse(po);
     }
 
     public POResponse getPO(Long id) {
-        PurchaseOrder po = poRepository.findById(id)
+        Long companyId = TenantContext.getCurrentCompanyId();
+        PurchaseOrder po = poRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("PO not found: " + id));
         return toPOResponse(po);
     }
 
     public List<POResponse> listPOs(String status) {
+        Long companyId = TenantContext.getCurrentCompanyId();
         List<PurchaseOrder> pos;
         if (status != null && !status.isBlank()) {
             try {
                 POStatus poStatus = POStatus.valueOf(status.toUpperCase());
-                pos = poRepository.findByStatusOrderByCreatedAtDesc(poStatus);
+                pos = poRepository.findByCompanyIdAndStatusOrderByCreatedAtDesc(companyId, poStatus);
             } catch (IllegalArgumentException e) {
                 throw new BusinessException("Invalid status: " + status);
             }
         } else {
-            pos = poRepository.findAllByOrderByCreatedAtDesc();
+            pos = poRepository.findByCompanyIdOrderByCreatedAtDesc(companyId);
         }
         return pos.stream().map(this::toPOResponse).toList();
     }
 
     @Transactional
     public POResponse updatePOStatus(Long id, POStatusUpdateRequest request) {
-        PurchaseOrder po = poRepository.findById(id)
+        Long companyId = TenantContext.getCurrentCompanyId();
+        PurchaseOrder po = poRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new BusinessException("PO not found: " + id));
         POStatus newStatus;
         try {
@@ -316,13 +385,14 @@ public class ProcurementService {
     }
 
     public List<ApprovalStepResponse> getApprovalSteps() {
-        return approvalStepRepository.findAllByOrderByStepOrderAsc()
+        return approvalStepRepository.findByCompanyIdOrderByStepOrderAsc(TenantContext.getCurrentCompanyId())
                 .stream().map(this::toApprovalStepResponse).toList();
     }
 
     @Transactional
     public ApprovalStepResponse createApprovalStep(ApprovalStepRequest request) {
         ApprovalStep step = new ApprovalStep();
+        step.setCompanyId(TenantContext.getCurrentCompanyId());
         step.setRoleName(request.getRoleName());
         step.setStepOrder(request.getStepOrder());
         step.setMinAmount(request.getMinAmount());
@@ -334,6 +404,10 @@ public class ProcurementService {
 
     @Transactional
     public void deleteApprovalStep(Long id) {
+        Long companyId = TenantContext.getCurrentCompanyId();
+        ApprovalStep step = approvalStepRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Approval step not found: " + id));
+        if (!companyId.equals(step.getCompanyId())) throw new BusinessException("Approval step not found");
         approvalStepRepository.deleteById(id);
     }
 

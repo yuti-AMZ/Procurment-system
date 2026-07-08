@@ -10,6 +10,7 @@ public abstract class BaseEvent implements Serializable {
     private String eventType;
     private LocalDateTime timestamp;
     private String source;
+    private Long companyId;
 
     public BaseEvent() {
         this.eventId = UUID.randomUUID().toString();
@@ -22,6 +23,13 @@ public abstract class BaseEvent implements Serializable {
         this.source = source;
     }
 
+    public BaseEvent(String eventType, String source, Long companyId) {
+        this();
+        this.eventType = eventType;
+        this.source = source;
+        this.companyId = companyId;
+    }
+
     public String getEventId() { return eventId; }
     public void setEventId(String eventId) { this.eventId = eventId; }
     public String getEventType() { return eventType; }
@@ -30,4 +38,6 @@ public abstract class BaseEvent implements Serializable {
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
 }

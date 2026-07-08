@@ -53,7 +53,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     flatMap[locale][key] ?? flatMap.en[key] ?? key;
   return (
     <I18nContext.Provider value={{ locale, t, setLocale }}>
-      {children}{" "}
+      {children}
     </I18nContext.Provider>
   );
 }

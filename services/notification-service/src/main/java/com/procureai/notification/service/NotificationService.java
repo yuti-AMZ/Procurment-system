@@ -6,14 +6,16 @@ import com.procureai.notification.entity.Notification;
 import com.procureai.notification.entity.NotificationPreference;
 import com.procureai.notification.entity.NotificationStatus;
 import com.procureai.notification.exception.BusinessException;
+import com.procureai.common.security.TenantContext;
 import com.procureai.notification.repository.NotificationPreferenceRepository;
 import com.procureai.notification.repository.NotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.mail.internet.MimeMessage;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,11 +37,12 @@ public class NotificationService {
     }
 
     @Transactional
-    public NotificationResponse createNotification(String recipientUserId, String recipientEmail,
+    public NotificationResponse createNotification(Long companyId, String recipientUserId, String recipientEmail,
                                                     String title, String message,
                                                     String notificationType, String link,
                                                     String sourceService) {
         Notification n = new Notification();
+        n.setCompanyId(companyId != null ? companyId : TenantContext.getCurrentCompanyId());
         n.setRecipientUserId(recipientUserId);
         n.setRecipientEmail(recipientEmail);
         n.setTitle(title);
@@ -74,8 +77,15 @@ public class NotificationService {
 
     @Transactional
     public void markAllAsRead(String userId) {
-        List<Notification> unread = notificationRepository
-                .findByRecipientUserIdAndStatusOrderByCreatedAtDesc(userId, NotificationStatus.UNREAD);
+        Long companyId = TenantContext.getCurrentCompanyId();
+        List<Notification> unread;
+        if (companyId != null) {
+            unread = notificationRepository
+                    .findByCompanyIdAndRecipientUserIdAndStatusOrderByCreatedAtDesc(companyId, userId, NotificationStatus.UNREAD);
+        } else {
+            unread = notificationRepository
+                    .findByRecipientUserIdAndStatusOrderByCreatedAtDesc(userId, NotificationStatus.UNREAD);
+        }
         for (Notification n : unread) {
             n.setStatus(NotificationStatus.READ);
             n.setReadAt(LocalDateTime.now());
@@ -84,9 +94,15 @@ public class NotificationService {
     }
 
     public List<NotificationResponse> listNotifications(String userId, String status) {
+        Long companyId = TenantContext.getCurrentCompanyId();
         if (status != null && !status.isBlank()) {
             try {
                 NotificationStatus ns = NotificationStatus.valueOf(status.toUpperCase());
+                if (companyId != null) {
+                    return notificationRepository
+                            .findByCompanyIdAndRecipientUserIdAndStatusOrderByCreatedAtDesc(companyId, userId, ns)
+                            .stream().map(this::toResponse).toList();
+                }
                 return notificationRepository
                         .findByRecipientUserIdAndStatusOrderByCreatedAtDesc(userId, ns)
                         .stream().map(this::toResponse).toList();
@@ -94,11 +110,19 @@ public class NotificationService {
                 throw new BusinessException("Invalid status: " + status);
             }
         }
+        if (companyId != null) {
+            return notificationRepository.findByCompanyIdAndRecipientUserIdOrderByCreatedAtDesc(companyId, userId)
+                    .stream().map(this::toResponse).toList();
+        }
         return notificationRepository.findByRecipientUserIdOrderByCreatedAtDesc(userId)
                 .stream().map(this::toResponse).toList();
     }
 
     public long getUnreadCount(String userId) {
+        Long companyId = TenantContext.getCurrentCompanyId();
+        if (companyId != null) {
+            return notificationRepository.countByCompanyIdAndRecipientUserIdAndStatus(companyId, userId, NotificationStatus.UNREAD);
+        }
         return notificationRepository.countByRecipientUserIdAndStatus(userId, NotificationStatus.UNREAD);
     }
 
@@ -132,13 +156,15 @@ public class NotificationService {
         return preferenceRepository.save(pref);
     }
 
-    public void sendEmail(String to, String subject, String body) {
+    public void sendEmail(String to, String subject, String htmlBody) {
         try {
-            SimpleMailMessage msg = new SimpleMailMessage();
-            msg.setTo(to);
-            msg.setSubject(subject);
-            msg.setText(body);
-            mailSender.send(msg);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            helper.setFrom("noreply@procureai.com");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlBody, true);
+            mailSender.send(message);
             log.info("Email sent to {}: {}", to, subject);
         } catch (Exception e) {
             log.warn("Failed to send email to {}: {}", to, e.getMessage());
@@ -148,6 +174,7 @@ public class NotificationService {
     private NotificationResponse toResponse(Notification n) {
         NotificationResponse r = new NotificationResponse();
         r.setId(n.getId());
+        r.setCompanyId(n.getCompanyId());
         r.setRecipientUserId(n.getRecipientUserId());
         r.setRecipientEmail(n.getRecipientEmail());
         r.setTitle(n.getTitle());

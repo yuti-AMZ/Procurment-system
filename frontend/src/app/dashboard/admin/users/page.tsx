@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,16 +46,11 @@ export default function UsersPage() {
   });
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Users</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage platform users and their access
-          </p>
-        </div>
-        <Link href="/dashboard/admin/users/new">
-          <Button>Create New User</Button>
-        </Link>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Users</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          View platform users
+        </p>
       </div>
       <Card>
         <CardHeader>

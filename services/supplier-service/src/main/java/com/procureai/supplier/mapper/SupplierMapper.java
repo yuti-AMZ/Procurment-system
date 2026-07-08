@@ -10,51 +10,52 @@ import java.util.stream.Collectors;
 @Component
 public class SupplierMapper {
 
-    public Supplier toEntity(RegisterRequest request) {
-        Supplier supplier = new Supplier();
-        supplier.setCompanyName(request.getCompanyName());
-        supplier.setRegistrationNumber(request.getRegistrationNumber());
-        supplier.setEmail(request.getEmail());
-        supplier.setPhone(request.getPhone());
-        supplier.setAddress(request.getAddress());
-        supplier.setCity(request.getCity());
-        supplier.setCountry(request.getCountry());
-        supplier.setPostalCode(request.getPostalCode());
-        supplier.setWebsite(request.getWebsite());
-        supplier.setTaxId(request.getTaxId());
-        supplier.setCategory(request.getCategory());
-        supplier.setDescription(request.getDescription());
-        return supplier;
+    public SupplierProfile toProfileEntity(RegisterRequest request) {
+        SupplierProfile profile = new SupplierProfile();
+        profile.setCompanyName(request.getCompanyName());
+        profile.setRegistrationNumber(request.getRegistrationNumber());
+        profile.setEmail(request.getEmail());
+        profile.setPhone(request.getPhone());
+        profile.setAddress(request.getAddress());
+        profile.setCity(request.getCity());
+        profile.setCountry(request.getCountry());
+        profile.setPostalCode(request.getPostalCode());
+        profile.setWebsite(request.getWebsite());
+        profile.setTaxId(request.getTaxId());
+        profile.setCategory(request.getCategory());
+        profile.setDescription(request.getDescription());
+        return profile;
     }
 
-    public SupplierResponse toResponse(Supplier supplier) {
+    public SupplierResponse toResponse(SupplierProfile profile, TenantSupplierRelationship relationship) {
         SupplierResponse resp = new SupplierResponse();
-        resp.setId(supplier.getId());
-        resp.setCompanyName(supplier.getCompanyName());
-        resp.setRegistrationNumber(supplier.getRegistrationNumber());
-        resp.setEmail(supplier.getEmail());
-        resp.setPhone(supplier.getPhone());
-        resp.setAddress(supplier.getAddress());
-        resp.setCity(supplier.getCity());
-        resp.setCountry(supplier.getCountry());
-        resp.setPostalCode(supplier.getPostalCode());
-        resp.setWebsite(supplier.getWebsite());
-        resp.setTaxId(supplier.getTaxId());
-        resp.setCategory(supplier.getCategory());
-        resp.setDescription(supplier.getDescription());
-        resp.setStatus(supplier.getStatus());
-        resp.setApprovedBy(supplier.getApprovedBy());
-        resp.setApprovedAt(supplier.getApprovedAt());
-        resp.setRejectionReason(supplier.getRejectionReason());
-        resp.setCreatedAt(supplier.getCreatedAt());
-        resp.setUpdatedAt(supplier.getUpdatedAt());
+        resp.setId(profile.getId());
+        resp.setCompanyName(profile.getCompanyName());
+        resp.setRegistrationNumber(profile.getRegistrationNumber());
+        resp.setEmail(profile.getEmail());
+        resp.setPhone(profile.getPhone());
+        resp.setAddress(profile.getAddress());
+        resp.setCity(profile.getCity());
+        resp.setCountry(profile.getCountry());
+        resp.setPostalCode(profile.getPostalCode());
+        resp.setWebsite(profile.getWebsite());
+        resp.setTaxId(profile.getTaxId());
+        resp.setCategory(profile.getCategory());
+        resp.setDescription(profile.getDescription());
+        resp.setStatus(relationship.getStatus());
+        resp.setApprovedBy(relationship.getApprovedBy());
+        resp.setApprovedAt(relationship.getApprovedAt());
+        resp.setRejectionReason(relationship.getRejectionReason());
+        resp.setCreatedAt(relationship.getCreatedAt());
+        resp.setUpdatedAt(relationship.getUpdatedAt());
         return resp;
     }
 
-    public SupplierResponse toFullResponse(Supplier supplier,
-                                            List<SupplierContact> contacts,
-                                            List<SupplierDocument> docs) {
-        SupplierResponse resp = toResponse(supplier);
+    public SupplierResponse toFullResponse(SupplierProfile profile,
+                                           TenantSupplierRelationship relationship,
+                                           List<SupplierContact> contacts,
+                                           List<SupplierDocument> docs) {
+        SupplierResponse resp = toResponse(profile, relationship);
         if (contacts != null) {
             resp.setContacts(contacts.stream().map(this::toContactResponse).collect(Collectors.toList()));
         }
@@ -84,9 +85,9 @@ public class SupplierMapper {
         return r;
     }
 
-    public SupplierContact toContactEntity(RegisterRequest request, Long supplierId) {
+    public SupplierContact toContactEntity(RegisterRequest request, Long supplierProfileId) {
         SupplierContact contact = new SupplierContact();
-        contact.setSupplierId(supplierId);
+        contact.setSupplierProfileId(supplierProfileId);
         contact.setFullName(request.getPrimaryContactName());
         contact.setEmail(request.getPrimaryContactEmail());
         contact.setPhone(request.getPrimaryContactPhone());

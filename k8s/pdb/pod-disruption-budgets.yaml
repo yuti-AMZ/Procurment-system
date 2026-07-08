@@ -1,0 +1,98 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway-pdb
+  namespace: procureai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-service-pdb
+  namespace: procureai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: auth-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: procurement-service-pdb
+  namespace: procureai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: procurement-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: rfq-service-pdb
+  namespace: procureai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: rfq-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: quotation-service-pdb
+  namespace: procureai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: quotation-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: supplier-service-pdb
+  namespace: procureai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: supplier-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: invoice-service-pdb
+  namespace: procureai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: invoice-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service-pdb
+  namespace: procureai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: notification-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: procureai
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: frontend

@@ -8,5 +8,9 @@ public enum Role {
     PROCUREMENT,
     MANAGER,
     EMPLOYEE,
-    SUPPLIER
+    SUPPLIER,
+    /** Manages finance, invoicing, and payment workflows */
+    FINANCE_OFFICER,
+    /** Read-only access for audit and compliance */
+    AUDITOR
 }

@@ -23,6 +23,9 @@ public class User {
     @Column(nullable = false)
     private UserRole role;
 
+    @Column(nullable = false)
+    private Long companyId;
+
     private String phone;
 
     private String jobTitle;
@@ -51,6 +54,8 @@ public class User {
     public void setFirstName(String firstName) { this.firstName = firstName; }
     public String getLastName() { return lastName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public UserRole getRole() { return role; }
     public void setRole(UserRole role) { this.role = role; }
     public String getPhone() { return phone; }

@@ -43,6 +43,7 @@ public class RfqEventConsumer {
         }
 
         notificationService.createNotification(
+                event.getCompanyId(),
                 null, null, title, message,
                 "RFQ_" + type, "/rfq/" + event.getRfqId(),
                 "rfq-service"

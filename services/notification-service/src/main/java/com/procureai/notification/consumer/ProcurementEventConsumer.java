@@ -48,6 +48,7 @@ public class ProcurementEventConsumer {
         }
 
         notificationService.createNotification(
+                event.getCompanyId(),
                 event.getRequestedBy(),
                 null,
                 title,

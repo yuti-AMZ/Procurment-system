@@ -10,8 +10,8 @@ public class SupplierContact {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long supplierId;
+    @Column(name = "supplier_profile_id", nullable = false)
+    private Long supplierProfileId;
 
     @Column(nullable = false)
     private String fullName;
@@ -26,8 +26,8 @@ public class SupplierContact {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public Long getSupplierId() { return supplierId; }
-    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public Long getSupplierProfileId() { return supplierProfileId; }
+    public void setSupplierProfileId(Long supplierProfileId) { this.supplierProfileId = supplierProfileId; }
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
     public String getEmail() { return email; }

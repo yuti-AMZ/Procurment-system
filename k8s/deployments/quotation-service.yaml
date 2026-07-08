@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quotation-service
+  namespace: procureai
+  labels:
+    app: quotation-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: quotation-service
+  template:
+    metadata:
+      labels:
+        app: quotation-service
+    spec:
+      containers:
+        - name: quotation-service
+          image: procureai/quotation-service:latest
+          ports:
+            - containerPort: 8084
+          envFrom:
+            - configMapRef:
+                name: procureai-config
+            - secretRef:
+                name: procureai-secrets
+          env:
+            - name: DB_NAME
+              value: quotation_db
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8084
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8084
+            initialDelaySeconds: 30
+            periodSeconds: 10

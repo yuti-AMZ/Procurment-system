@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: procureai
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: procureai
+spec:
+  selector:
+    app: api-gateway
+  ports:
+    - port: 8082
+      targetPort: 8082
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: procureai
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 8090
+      targetPort: 8090
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rfq-service
+  namespace: procureai
+spec:
+  selector:
+    app: rfq-service
+  ports:
+    - port: 8083
+      targetPort: 8083
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quotation-service
+  namespace: procureai
+spec:
+  selector:
+    app: quotation-service
+  ports:
+    - port: 8084
+      targetPort: 8084
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: supplier-service
+  namespace: procureai
+spec:
+  selector:
+    app: supplier-service
+  ports:
+    - port: 8085
+      targetPort: 8085
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: invoice-service
+  namespace: procureai
+spec:
+  selector:
+    app: invoice-service
+  ports:
+    - port: 8086
+      targetPort: 8086
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: procureai
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - port: 8087
+      targetPort: 8087
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: procurement-service
+  namespace: procureai
+spec:
+  selector:
+    app: procurement-service
+  ports:
+    - port: 8088
+      targetPort: 8088
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ocr-service
+  namespace: procureai
+spec:
+  selector:
+    app: ocr-service
+  ports:
+    - port: 8091
+      targetPort: 8091
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: procureai
+spec:
+  selector:
+    app: ai-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP

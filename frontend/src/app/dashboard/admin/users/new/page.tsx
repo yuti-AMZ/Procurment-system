@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { adminCreateUser } from "@/lib/api";
-const roles = ["ADMIN", "PROCUREMENT", "MANAGER", "EMPLOYEE", "SUPPLIER"];
+const roles = ["ADMIN", "COMPANY_ADMIN", "PROCUREMENT", "MANAGER", "EMPLOYEE", "SUPPLIER", "FINANCE_OFFICER", "AUDITOR"];
 export default function NewUserPage() {
   const router = useRouter();
   const [form, setForm] = useState({

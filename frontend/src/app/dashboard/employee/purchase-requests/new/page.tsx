@@ -12,10 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useI18n } from "@/lib/i18n-provider";
 import { createPR, submitPR } from "@/lib/api";
 export default function NewPurchaseRequestPage() {
-  const { t } = useI18n();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -65,7 +63,7 @@ export default function NewPurchaseRequestPage() {
       await submitPR(pr.id);
       router.push("/dashboard/employee/purchase-requests");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to create PR");
+      setError(err instanceof Error ? err.message : "Failed to create purchase request");
     } finally {
       setSubmitting(false);
     }
@@ -116,31 +114,27 @@ export default function NewPurchaseRequestPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">
-          {t("portal.employee.newPR.title")}
+          New Purchase Request
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {t("portal.employee.newPR.subtitle")}
+          Submit a new purchase request for approval
         </p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="">
-            {t("portal.employee.newPR.formTitle")}
-          </CardTitle>
+          <CardTitle>Purchase Request Details</CardTitle>
           <CardDescription>
-            {t("portal.employee.newPR.formDesc")}
+            Fill in the details below. All fields marked with * are required.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           {error && (
             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-              {error}{" "}
+              {error}
             </div>
-          )}{" "}
+          )}
           <div className="space-y-2">
-            <Label htmlFor="title">
-              {t("portal.employee.newPR.titleLabel")}
-            </Label>
+            <Label htmlFor="title">Title *</Label>
             <Input
               id="title"
               placeholder="e.g. Dell UltraSharp 27 inch Monitor"
@@ -149,12 +143,10 @@ export default function NewPurchaseRequestPage() {
             />
             {errors.title && (
               <p className="text-xs text-destructive">{errors.title}</p>
-            )}{" "}
+            )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">
-              {t("portal.employee.newPR.descLabel")}
-            </Label>
+            <Label htmlFor="description">Description *</Label>
             <textarea
               id="description"
               rows={4}
@@ -168,13 +160,11 @@ export default function NewPurchaseRequestPage() {
             />
             {errors.description && (
               <p className="text-xs text-destructive">{errors.description}</p>
-            )}{" "}
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category">
-                {t("portal.employee.newPR.categoryLabel")}
-              </Label>
+              <Label htmlFor="category">Category *</Label>
               <select
                 id="category"
                 className={inputClass("category") + " cursor-pointer"}
@@ -192,12 +182,10 @@ export default function NewPurchaseRequestPage() {
               </select>
               {errors.category && (
                 <p className="text-xs text-destructive">{errors.category}</p>
-              )}{" "}
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="urgency">
-                {t("portal.employee.newPR.urgencyLabel")}
-              </Label>
+              <Label htmlFor="urgency">Urgency *</Label>
               <select
                 id="urgency"
                 className={inputClass("urgency") + " cursor-pointer"}
@@ -212,13 +200,11 @@ export default function NewPurchaseRequestPage() {
               </select>
               {errors.urgency && (
                 <p className="text-xs text-destructive">{errors.urgency}</p>
-              )}{" "}
+              )}
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="budget">
-              {t("portal.employee.newPR.budgetLabel")}
-            </Label>
+            <Label htmlFor="budget">Estimated Budget *</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                 $
@@ -236,12 +222,10 @@ export default function NewPurchaseRequestPage() {
             </div>
             {errors.budget && (
               <p className="text-xs text-destructive">{errors.budget}</p>
-            )}{" "}
+            )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="justification">
-              {t("portal.employee.newPR.justificationLabel")}
-            </Label>
+            <Label htmlFor="justification">Justification</Label>
             <textarea
               id="justification"
               rows={4}
@@ -257,7 +241,7 @@ export default function NewPurchaseRequestPage() {
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" onClick={() => router.back()}>
-            {t("portal.employee.newPR.cancel")}
+            Cancel
           </Button>
           <div className="flex gap-3">
             <Button
@@ -265,14 +249,10 @@ export default function NewPurchaseRequestPage() {
               onClick={handleSaveDraft}
               disabled={submitting}
             >
-              {submitting
-                ? "Saving..."
-                : t("portal.employee.newPR.saveDraft")}{" "}
+              {submitting ? "Saving..." : "Save as Draft"}
             </Button>
             <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting
-                ? "Submitting..."
-                : t("portal.employee.newPR.submit")}{" "}
+              {submitting ? "Submitting..." : "Submit for Approval"}
             </Button>
           </div>
         </CardFooter>

@@ -36,6 +36,9 @@ public class PurchaseRequest {
 
     private String notes;
 
+    @Column(nullable = false)
+    private Long companyId;
+
     private Long assignedSupplierId;
     private String assignedSupplierName;
 
@@ -87,6 +90,8 @@ public class PurchaseRequest {
     public void setAssignedSupplierId(Long assignedSupplierId) { this.assignedSupplierId = assignedSupplierId; }
     public String getAssignedSupplierName() { return assignedSupplierName; }
     public void setAssignedSupplierName(String assignedSupplierName) { this.assignedSupplierName = assignedSupplierName; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

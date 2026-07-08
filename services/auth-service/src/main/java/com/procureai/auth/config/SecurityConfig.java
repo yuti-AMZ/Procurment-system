@@ -25,19 +25,21 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.disable())
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/register-company",
-                                 "/api/auth/login", "/api/auth/oauth",
-                                 "/api/auth/refresh", "/api/auth/verify-email",
-                                 "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
-                .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/auth/company/**").hasRole("COMPANY_ADMIN")
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .cors(cors -> cors.disable())
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/register", "/api/auth/register-company",
+                                "/api/auth/login", "/api/auth/oauth",
+                                "/api/auth/refresh", "/api/auth/verify-email",
+                                "/api/auth/forgot-password", "/api/auth/reset-password",
+                                "/api/tenant/branding")
+                        .permitAll()
+                        .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/platform/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/auth/company/**").hasRole("COMPANY_ADMIN")
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -14,6 +14,10 @@ public class SupplierEvent extends BaseEvent {
         super(eventType, source);
     }
 
+    public SupplierEvent(String eventType, String source, Long companyId) {
+        super(eventType, source, companyId);
+    }
+
     public Long getSupplierId() { return supplierId; }
     public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
     public String getCompanyName() { return companyName; }

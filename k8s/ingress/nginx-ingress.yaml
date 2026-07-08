@@ -1,0 +1,86 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: procureai-ingress
+  namespace: procureai
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      # Extract tenant subdomain and pass as header
+      set $tenant "";
+      if ($host ~* "^([a-z0-9-]+)\.procureai\.com$") {
+        set $tenant $1;
+      }
+      proxy_set_header X-Tenant-Id $tenant;
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - procureai.com
+        - "*.procureai.com"
+      secretName: procureai-tls
+  rules:
+    # ============================================
+    # API routes -> api-gateway
+    # ============================================
+    - host: api.procureai.com
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8082
+
+    # ============================================
+    # Tenant subdomains -> api-gateway (HIS integrations)
+    # hospital-a.procureai.com -> tenant=hospital-a
+    # ============================================
+    - host: "*.procureai.com"
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8082
+
+    # ============================================
+    # Tenant subdomains -> frontend
+    # hospital-a.procureai.com (no /api prefix)
+    # ============================================
+    - host: "*.procureai.com"
+      http:
+        paths:
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: procureai-frontend
+                port:
+                  number: 3000
+
+    # ============================================
+    # Main domain -> frontend
+    # ============================================
+    - host: procureai.com
+      http:
+        paths:
+          - path: /(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: procureai-frontend
+                port:
+                  number: 3000
