@@ -3,6 +3,12 @@ spring:
     name: auth-service
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/auth_db}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 1200000
     username: ${DB_USERNAME:admin}
     password: ${DB_PASSWORD:supersecretpassword}
     driver-class-name: org.postgresql.Driver
