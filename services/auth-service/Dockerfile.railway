@@ -4,6 +4,14 @@ WORKDIR /build
 COPY pom.xml .
 COPY services/common/pom.xml services/common/pom.xml
 COPY services/auth-service/pom.xml services/auth-service/pom.xml
+COPY services/api-gateway/pom.xml services/api-gateway/pom.xml
+COPY services/user-service/pom.xml services/user-service/pom.xml
+COPY services/procurement-service/pom.xml services/procurement-service/pom.xml
+COPY services/rfq-service/pom.xml services/rfq-service/pom.xml
+COPY services/quotation-service/pom.xml services/quotation-service/pom.xml
+COPY services/supplier-service/pom.xml services/supplier-service/pom.xml
+COPY services/invoice-service/pom.xml services/invoice-service/pom.xml
+COPY services/notification-service/pom.xml services/notification-service/pom.xml
 RUN mvn dependency:go-offline -pl services/auth-service -am -B
 COPY services/common/src services/common/src
 COPY services/auth-service/src services/auth-service/src
