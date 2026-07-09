@@ -334,6 +334,20 @@ const en = {
         empty: "No purchase requests yet",
         createFirst: "Create your first purchase request",
       },
+      profile: {
+        title: "My Profile",
+        subtitle: "View and update your personal information",
+        editTitle: "Edit Profile",
+        firstName: "First Name",
+        lastName: "Last Name",
+        email: "Email",
+        emailLabel: "Email Address",
+        role: "Role",
+        phoneLabel: "Phone Number",
+        jobTitleLabel: "Job Title",
+        deptLabel: "Department",
+        save: "Save Changes",
+      },
     },
     manager: {
       approvals: {
