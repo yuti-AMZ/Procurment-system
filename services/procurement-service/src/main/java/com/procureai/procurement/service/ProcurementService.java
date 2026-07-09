@@ -13,6 +13,7 @@ import com.procureai.procurement.producer.ProcurementEventProducer;
 import com.procureai.procurement.repository.*;
 import com.procureai.procurement.entity.auth.AuthCompany;
 import com.procureai.procurement.repository.auth.AuthCompanyRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;

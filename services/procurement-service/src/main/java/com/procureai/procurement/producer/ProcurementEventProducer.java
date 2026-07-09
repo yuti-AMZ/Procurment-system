@@ -4,21 +4,19 @@ import com.procureai.common.event.ProcurementEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnBean(RabbitTemplate.class)
 public class ProcurementEventProducer {
 
     private static final Logger log = LoggerFactory.getLogger(ProcurementEventProducer.class);
-    private final RabbitTemplate rabbitTemplate;
 
-    public ProcurementEventProducer(RabbitTemplate rabbitTemplate) {
-        this.rabbitTemplate = rabbitTemplate;
-    }
+    @Autowired(required = false)
+    private RabbitTemplate rabbitTemplate;
 
     public void sendPrCreated(ProcurementEvent event) {
+        if (rabbitTemplate == null) { log.warn("RabbitMQ not available, skipping PR_CREATED event"); return; }
         try {
             event.setEventType("PR_CREATED");
             event.setSource("procurement-service");
@@ -29,6 +27,7 @@ public class ProcurementEventProducer {
     }
 
     public void sendPrApproved(ProcurementEvent event) {
+        if (rabbitTemplate == null) { log.warn("RabbitMQ not available, skipping PR_APPROVED event"); return; }
         try {
             event.setEventType("PR_APPROVED");
             event.setSource("procurement-service");
@@ -39,6 +38,7 @@ public class ProcurementEventProducer {
     }
 
     public void sendPoGenerated(ProcurementEvent event) {
+        if (rabbitTemplate == null) { log.warn("RabbitMQ not available, skipping PO_GENERATED event"); return; }
         try {
             event.setEventType("PO_GENERATED");
             event.setSource("procurement-service");
