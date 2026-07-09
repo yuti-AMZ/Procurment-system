@@ -4,10 +4,12 @@ import com.procureai.common.event.QuotationEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 
 @Component
+@ConditionalOnExpression("!T(org.springframework.util.StringUtils).isEmpty('${spring.rabbitmq.host:}')")
 public class QuotationEventConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(QuotationEventConsumer.class);
