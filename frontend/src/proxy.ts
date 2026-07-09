@@ -14,7 +14,7 @@ const rolePathPrefixes: Record<string, string[]> = {
   AUDITOR: ["/dashboard/audit"],
 };
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
