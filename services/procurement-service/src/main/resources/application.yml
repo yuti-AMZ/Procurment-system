@@ -7,14 +7,17 @@ spring:
   application:
     name: procurement-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/procurement_db
-    username: admin
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/procurement_db}
+    username: ${DB_USERNAME:admin}
     password: ${DB_PASSWORD:supersecretpassword}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
     auth:
-      url: jdbc:postgresql://localhost:5432/auth_db
-      username: admin
-      password: ${DB_PASSWORD:supersecretpassword}
+      url: ${AUTH_DATABASE_URL:jdbc:postgresql://localhost:5432/auth_db}
+      username: ${AUTH_DB_USERNAME:admin}
+      password: ${AUTH_DB_PASSWORD:supersecretpassword}
       driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -26,10 +29,20 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
   rabbitmq:
-    host: localhost
-    port: 5672
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASS:guest}
+    connection-timeout: 5000
+    requested-heartbeat: 10
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 3
+        max-interval: 5000
 
 springdoc:
   api-docs:
