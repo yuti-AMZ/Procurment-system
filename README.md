@@ -13,7 +13,7 @@ A multi-tenant SaaS procurement platform built with Java Spring Boot microservic
 | **Cache** | Redis 7 |
 | **Object Storage** | MinIO (S3-compatible) |
 | **AI/OCR** | Python (FastAPI) |
-| **Deployment** | Docker Compose (local), Kubernetes (production) |
+| **Deployment** | Docker Compose (local), vercel and render 
 
 ## Architecture
 
